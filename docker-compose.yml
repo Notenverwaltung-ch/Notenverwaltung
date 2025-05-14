@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  notenverwaltung-db:
+    image: postgres:13
+    hostname: "nv-postgres"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "1231:5432"
+    volumes:
+      - ./data/postgres-data:/var/lib/postgresql/data
+    networks:
+      - notenverwaltung_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  pgadmin:
+    user: root
+    image: dpage/pgadmin4
+    hostname: "pgadmin-notenverwaltung"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: test@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: 123
+    networks:
+      - notenverwaltung_network
+    volumes:
+      - ./data/postgres/pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "4568:80"
+
+networks:
+  notenverwaltung_network:
+    external: true
+
+volumes:
+  postgres-data:
