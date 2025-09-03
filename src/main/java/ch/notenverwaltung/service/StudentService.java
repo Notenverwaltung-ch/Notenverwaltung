@@ -42,8 +42,8 @@ public class StudentService {
     @Transactional
     public StudentDTO createStudent(StudentDTO studentDTO) {
         Student student = mapToEntity(studentDTO);
-        student.setId(null); // Ensure we're creating a new entity
-        student.setActive(true); // New students are active by default
+        student.setId(null);
+        student.setActive(true);
         Student savedStudent = studentRepository.save(student);
         return mapToDTO(savedStudent);
     }

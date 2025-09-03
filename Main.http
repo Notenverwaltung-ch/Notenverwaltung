@@ -5,14 +5,14 @@ POST http://localhost:8080/api/public/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "password": "X5XGQ1VexN_qsloB"
+  "username": "{{username}}",
+  "password": "{{password}}"
 }
 
-###
+### get all students
 
 GET http://localhost:8080/api/students
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0NzI0MDQ1MiwiZXhwIjoxNzQ3MzI2ODUyfQ.ofm1XMovCbwdJTHJJ6Twlrw8W_tDqVYikHSNbrSubao
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ###

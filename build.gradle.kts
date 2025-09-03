@@ -33,6 +33,7 @@ dependencies {
     // Utilities
     implementation("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")

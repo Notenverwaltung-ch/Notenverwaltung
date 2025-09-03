@@ -19,15 +19,11 @@ public class ApplicationStartup implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Check if there are any users in the database
         if (userService.countUsers() == 0) {
-            // Generate a random password
             String password = generateRandomPassword();
 
-            // Create admin user
             User adminUser = userService.createAdminUser(password);
 
-            // Log the admin credentials
             log.info("\n\n=================================================");
             log.info("    DEFAULT ADMIN ACCOUNT CREATED");
             log.info("=================================================");
