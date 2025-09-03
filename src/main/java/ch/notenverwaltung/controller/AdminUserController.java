@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +27,7 @@ import java.util.List;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin User Management", description = "Admin-only endpoints for managing users")
+@Tag(name = "User Management", description = "Admin-only endpoints for managing users")
 public class AdminUserController {
 
     private final UserService userService;
@@ -39,8 +41,21 @@ public class AdminUserController {
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class)))
             }
     )
-    public ResponseEntity<org.springframework.data.domain.Page<User>> getAllUsers(org.springframework.data.domain.Pageable pageable) {
+    public ResponseEntity<Page<User>> getAllUsers(Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
+    }
+
+    @GetMapping(path = "/active", produces = "application/json")
+    @Operation(
+            summary = "List active users (paged)",
+            description = "Returns a paged list of users with active=true. Use standard Spring Data pageable params: page, size, sort.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Page of active users returned",
+                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class)))
+            }
+    )
+    public ResponseEntity<Page<User>> getActiveUsers(Pageable pageable) {
+        return ResponseEntity.ok(userService.getActiveUsers(pageable));
     }
 
     @PostMapping(consumes = "application/json", produces = "application/json")
@@ -81,6 +96,22 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping(path = "/{username}/active")
+    @Operation(
+            summary = "Set user active flag",
+            description = "Sets the active flag for the specified user to true or false via query parameter 'active'.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User updated",
+                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class))),
+                    @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+            }
+    )
+    public ResponseEntity<User> setActive(@PathVariable("username") String username,
+                                          @RequestParam("active") boolean active) {
+        User updated = userService.setActive(username, active);
+        return ResponseEntity.ok(updated);
+    }
+
     @PostMapping(path = "/{username}/roles", consumes = "application/json", produces = "application/json")
     @Operation(
             summary = "Grant a role to a user",
@@ -112,5 +143,19 @@ public class AdminUserController {
                                            @PathVariable("role") String role) {
         User updated = userService.revokeRole(username, role);
         return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping(path = "/{username}")
+    @Operation(
+            summary = "Delete a user",
+            description = "Deletes the specified user by username. Returns 204 if deleted, 404 if not found.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "User deleted", content = @Content),
+                    @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+            }
+    )
+    public ResponseEntity<Void> deleteUser(@PathVariable("username") String username) {
+        userService.deleteByUsername(username);
+        return ResponseEntity.noContent().build();
     }
 }

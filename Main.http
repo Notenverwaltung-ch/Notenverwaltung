@@ -9,9 +9,14 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-### get all students
+### get all students (paged)
 
-GET http://localhost:8080/api/students
+GET http://localhost:8080/api/students?page=0&size=20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### get active students (paged)
+GET http://localhost:8080/api/students/active?page=0&size=20
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -49,5 +54,57 @@ DELETE http://localhost:8080/api/admin/users/newuser/roles/ADMIN
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
+### admin: set user active flag
+PUT http://localhost:8080/api/admin/users/newuser/active?active=true
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### admin: list active users (paged)
+GET http://localhost:8080/api/admin/users/active?page=0&size=20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### admin: delete user
+DELETE http://localhost:8080/api/admin/users/newuser
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
 ###
+
+### tests: list all (paged)
+GET http://localhost:8080/api/tests?page=0&size=20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### tests: get by id
+GET http://localhost:8080/api/tests/{{testId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### tests: create (admin)
+POST http://localhost:8080/api/tests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Midterm Exam",
+  "semesterSubjectId": "{{semesterSubjectId}}",
+  "classId": "{{classId}}"
+}
+
+### tests: update (admin)
+PUT http://localhost:8080/api/tests/{{testId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Midterm Exam",
+  "semesterSubjectId": "{{semesterSubjectId}}",
+  "classId": "{{classId}}"
+}
+
+### tests: delete (admin)
+DELETE http://localhost:8080/api/tests/{{testId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
 

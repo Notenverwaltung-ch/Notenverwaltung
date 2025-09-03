@@ -44,6 +44,10 @@ public class UserService {
         return userRepository.findAll(pageable);
     }
 
+    public Page<User> getActiveUsers(Pageable pageable) {
+        return userRepository.findByActiveTrue(pageable);
+    }
+
     public User createAdminUser(String password) {
         return createUser("admin", password, Collections.singletonList("ROLE_ADMIN"));
     }
@@ -73,6 +77,21 @@ public class UserService {
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
         String normalized = normalizeRole(role);
         user.getRoles().remove(normalized);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+        userRepository.delete(user);
+    }
+
+    @Transactional
+    public User setActive(String username, boolean active) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
+        user.setActive(active);
         return userRepository.save(user);
     }
 
