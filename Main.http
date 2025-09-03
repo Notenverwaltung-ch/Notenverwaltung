@@ -15,5 +15,39 @@ GET http://localhost:8080/api/students
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
+### admin: create user
+POST http://localhost:8080/api/admin/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "newpassword",
+  "roles": ["USER"]
+}
+
+### admin: change user password
+PUT http://localhost:8080/api/admin/users/newuser/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newPassword": "changedPassword123"
+}
+
+### admin: grant role
+POST http://localhost:8080/api/admin/users/newuser/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### admin: revoke role
+DELETE http://localhost:8080/api/admin/users/newuser/roles/ADMIN
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
 ###
 

@@ -42,7 +42,8 @@ public class AuthController {
     @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
     @Operation(
             summary = "Login and retrieve JWT",
-            description = "Authenticates a user with username and password and returns a JWT access token.",
+            description = "Authenticates a user with username and password and returns a JWT access token. This endpoint is public and does not require a token.",
+            security = {},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successful authentication",
                             content = @Content(schema = @Schema(implementation = AuthResponseDTO.class))),
@@ -73,7 +74,8 @@ public class AuthController {
     @PostMapping(value = "/register", consumes = "application/json", produces = "application/json")
     @Operation(
             summary = "Register a new user",
-            description = "Creates a new user account and returns a JWT access token for the created user.",
+            description = "Creates a new user account with default role ROLE_USER and returns a JWT access token. This endpoint is public and does not require a token.",
+            security = {},
             responses = {
                     @ApiResponse(responseCode = "201", description = "User created",
                             content = @Content(schema = @Schema(implementation = AuthResponseDTO.class))),
