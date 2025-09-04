@@ -1,5 +1,5 @@
 # Simple multi-stage Dockerfile for Spring Boot (Gradle)
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre-alpine AS runtime
 
 # The JAR will be copied in at build time by the workflow/build context
 ARG JAR_FILE=build/libs/*.jar
