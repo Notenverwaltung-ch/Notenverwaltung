@@ -392,7 +392,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             ENV & DEV \\ \hline
             Pre-Conditions & Semester HS2025 und Subject Mathematik existieren \\ \hline
             Endpoint/Schritte & POST /api/semester-subjects mit {semesterId, subjectId} \\ \hline
-            Response (gekürzt) & 201 Created; Objekt enthält IDs \\ \hline
+            Response (gekürzt) & 201 Created; Objekt enth\"alt IDs \\ \hline
             Post-Conditions & Datensatz in semester_subjects existiert \\ \hline
             Referenz & REQ-SS-001 \\ \hline
         \end{tabularx}
@@ -428,7 +428,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             ENV & DEV \\ \hline
             Pre-Conditions & semester_subjects-Datensatz vorhanden \\ \hline
             Endpoint/Schritte & POST /api/classes mit {semesterSubjectId, name} \\ \hline
-            Response (gekürzt) & 201 Created; Klasse enthält semesterSubjectId \\ \hline
+            Response (gekürzt) & 201 Created; Klasse enth\"alt semesterSubjectId \\ \hline
             Post-Conditions & Datensatz in classes existiert \\ \hline
             Referenz & REQ-CLS-001 \\ \hline
         \end{tabularx}
@@ -446,7 +446,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             ENV & DEV \\ \hline
             Pre-Conditions & Klasse existiert \\ \hline
             Endpoint/Schritte & POST /api/tests mit {classId, semesterSubjectId, name, date} \\ \hline
-            Response (gekürzt) & 201 Created; Test enthält classId, semesterSubjectId \\ \hline
+            Response (gekürzt) & 201 Created; Test enth\"alt classId, semesterSubjectId \\ \hline
             Post-Conditions & Datensatz in tests existiert \\ \hline
             Referenz & REQ-TST-001 \\ \hline
         \end{tabularx}
@@ -464,7 +464,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             ENV & DEV \\ \hline
             Pre-Conditions & Test und Student existieren \\ \hline
             Endpoint/Schritte & POST /api/grades mit {studentId, testId, value} \\ \hline
-            Response (gekürzt) & 201 Created; Grade enthält studentId, testId, value \\ \hline
+            Response (gekürzt) & 201 Created; Grade enth\"alt studentId, testId, value \\ \hline
             Post-Conditions & Datensatz in grades existiert \\ \hline
             Referenz & REQ-GRD-001 \\ \hline
         \end{tabularx}
