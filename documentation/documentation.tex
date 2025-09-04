@@ -17,6 +17,8 @@
 \usepackage{fancyheadings}
 \usepackage{fancyhdr}
 
+\setlength{\headheight}{15pt}
+
 \pagestyle{fancy}
 \lhead{Luca Güttinger}
 \rhead{\today}
@@ -155,8 +157,8 @@
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
-        semester\_id & uuid & ja & FK \rightarrow semesters(id) \\ \hline
-        subject\_id & uuid & ja & FK \rightarrow subjects(id) \\ \hline
+        semester\_id & uuid & ja & FK $\rightarrow$ semesters(id) \\ \hline
+        subject\_id & uuid & ja & FK $\rightarrow$ subjects(id) \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; Unique(semester\_id, subject\_id) empfohlen
 
@@ -165,7 +167,7 @@
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
-        semester\_subject\_id & uuid & ja & FK \rightarrow semester\_subjects(id) \\ \hline
+        semester\_subject\_id & uuid & ja & FK $\rightarrow$ semester\_subjects(id) \\ \hline
         name & varchar(100) & nein & optionale Klassenbezeichnung \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; FK: semester\_subject\_id
@@ -176,8 +178,8 @@
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
         name & varchar(150) & ja &  \\ \hline
-        class\_id & uuid & ja & FK \rightarrow classes(id) \\ \hline
-        semester\_subject\_id & uuid & ja & FK \rightarrow semester\_subjects(id) \\ \hline
+        class\_id & uuid & ja & FK $\rightarrow$ classes(id) \\ \hline
+        semester\_subject\_id & uuid & ja & FK $\rightarrow$ semester\_subjects(id) \\ \hline
         max\_points & numeric(10,2) & nein &  \\ \hline
         date & date & nein &  \\ \hline
     \end{longtable}
@@ -190,8 +192,8 @@
         id & uuid & ja & Primärschlüssel \\ \hline
         value & numeric(4,2) & ja & Notenwert (z. B. 1.0-6.0) \\ \hline
         weight & numeric(4,2) & nein & Gewichtung in Prozent \\ \hline
-        student\_id & uuid & ja & FK \rightarrow students(id) \\ \hline
-        test\_id & uuid & ja & FK \rightarrow tests(id) \\ \hline
+        student\_id & uuid & ja & FK $\rightarrow$ students(id) \\ \hline
+        test\_id & uuid & ja & FK $\rightarrow$ tests(id) \\ \hline
         comment & varchar(255) & nein & Freitext \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
@@ -217,7 +219,7 @@
     \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
-        user\_id & uuid & ja & FK \rightarrow users(id) \\ \hline
+        user\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
         role & varchar(50) & ja & z. B. ADMIN, USER \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id

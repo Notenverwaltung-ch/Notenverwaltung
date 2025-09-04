@@ -1,14 +1,11 @@
-# Simple multi-stage Dockerfile for Spring Boot (Gradle)
+# Simple Dockerfile for Spring Boot runtime
 FROM eclipse-temurin:17-jre-alpine AS runtime
-
-# The JAR will be copied in at build time by the workflow/build context
-ARG JAR_FILE=build/libs/*.jar
 
 # Create app directory
 WORKDIR /app
 
-# Copy the jar from build context
-COPY ${JAR_FILE} app.jar
+# Copy the jar from build context (expecting app.jar at repository root)
+COPY app.jar /app/app.jar
 
 # Expose default Spring port
 EXPOSE 8080

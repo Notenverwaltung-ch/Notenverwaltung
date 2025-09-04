@@ -90,6 +90,35 @@ jobs:
           name: app-jar
           path: build/libs
 
+      - name: Normalize JAR filename and verify presence
+        run: |
+          echo "Workspace: $(pwd)"
+          ls -la
+          echo "Contents of build/libs:" || true
+          mkdir -p build/libs
+          ls -la build/libs || true
+          # If there is exactly one jar, rename it to app.jar and copy to repo root
+          COUNT=$(ls -1 build/libs/*.jar 2>/dev/null | wc -l || true)
+          if [ "$COUNT" = "0" ]; then
+            echo "No JAR found in build/libs after artifact download" >&2
+            exit 1
+          fi
+          if [ "$COUNT" = "1" ]; then
+            JAR=$(ls -1 build/libs/*.jar)
+            echo "Renaming $JAR to build/libs/app.jar"
+            mv "$JAR" build/libs/app.jar
+          else
+            echo "Multiple JARs found, selecting the first one to rename to app.jar" >&2
+            JAR=$(ls -1 build/libs/*.jar | head -n1)
+            mv "$JAR" build/libs/app.jar
+          fi
+          # Copy to repository root so Docker build context surely includes it
+          cp build/libs/app.jar ./app.jar
+          echo "Root contents after copying app.jar:"
+          ls -la
+          ls -la build/libs
+        shell: bash
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
