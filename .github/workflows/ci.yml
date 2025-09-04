@@ -94,24 +94,29 @@ jobs:
         run: |
           echo "Workspace: $(pwd)"
           ls -la
-          echo "Contents of build/libs:" || true
+          echo "Contents of build/libs (after artifact download):" || true
           mkdir -p build/libs
           ls -la build/libs || true
-          # If there is exactly one jar, rename it to app.jar and copy to repo root
-          COUNT=$(ls -1 build/libs/*.jar 2>/dev/null | wc -l || true)
-          if [ "$COUNT" = "0" ]; then
-            echo "No JAR found in build/libs after artifact download" >&2
+
+          # Collect possible jar locations. Note: the download-artifact action preserves
+          # original paths inside the archive, so downloading to build/libs may create
+          # a nested build/libs structure (build/libs/build/libs/*.jar).
+          shopt -s nullglob
+          JAR_CANDIDATES=(build/libs/*.jar build/libs/build/libs/*.jar)
+
+          COUNT=${#JAR_CANDIDATES[@]}
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No JAR found after artifact download (checked build/libs and build/libs/build/libs)" >&2
+            echo "Tree for debugging:" >&2
+            find build -maxdepth 3 -type f -name "*.jar" -print || true
             exit 1
           fi
-          if [ "$COUNT" = "1" ]; then
-            JAR=$(ls -1 build/libs/*.jar)
-            echo "Renaming $JAR to build/libs/app.jar"
-            mv "$JAR" build/libs/app.jar
-          else
-            echo "Multiple JARs found, selecting the first one to rename to app.jar" >&2
-            JAR=$(ls -1 build/libs/*.jar | head -n1)
-            mv "$JAR" build/libs/app.jar
-          fi
+
+          # Pick the first candidate and normalize the name to app.jar under build/libs
+          SRC_JAR="${JAR_CANDIDATES[0]}"
+          echo "Using JAR: $SRC_JAR"
+          cp "$SRC_JAR" build/libs/app.jar
+
           # Copy to repository root so Docker build context surely includes it
           cp build/libs/app.jar ./app.jar
           echo "Root contents after copying app.jar:"
@@ -166,6 +171,7 @@ jobs:
           working_directory: documentation
           latexmk_use_lualatex: false
           latexmk_use_xelatex: false
+          extra_system_packages: ghostscript
           args: -pdf -interaction=nonstopmode -halt-on-error
 
       - name: Upload PDF artifact
