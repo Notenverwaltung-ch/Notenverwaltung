@@ -30,11 +30,27 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
+      - name: Create JAR usage instructions
+        run: |
+          echo "How to run the application JAR" > RUN-README.txt
+          echo "" >> RUN-README.txt
+          echo "Prerequisites: Java 17 Runtime installed (e.g., Temurin 17)." >> RUN-README.txt
+          echo "" >> RUN-README.txt
+          echo "Run command:" >> RUN-README.txt
+          echo "  java -jar app.jar" >> RUN-README.txt
+          echo "" >> RUN-README.txt
+          echo "Alternatively, use the Docker image pushed to GHCR (see docker-image-info artifact in the docker job)." >> RUN-README.txt
+          echo "" >> RUN-README.txt
+          echo "Note: The service listens on port 8080 by default." >> RUN-README.txt
+        shell: bash
+
       - name: Upload build artifacts (JAR)
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
-          path: build/libs/*.jar
+          path: |
+            build/libs/*.jar
+            RUN-README.txt
 
   docker:
     name: Build and push Docker image
@@ -83,6 +99,30 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      - name: Create Docker image usage instructions
+        run: |
+          echo "Docker image pushed to GHCR" > docker-image-info.txt
+          echo "" >> docker-image-info.txt
+          echo "Repository: ghcr.io/${GITHUB_REPOSITORY}" >> docker-image-info.txt
+          echo "" >> docker-image-info.txt
+          echo "Available tags:" >> docker-image-info.txt
+          echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' >> docker-image-info.txt
+          echo "" >> docker-image-info.txt
+          echo "Pull the image:" >> docker-image-info.txt
+          echo "  docker pull ghcr.io/${GITHUB_REPOSITORY}:<tag>" >> docker-image-info.txt
+          echo "" >> docker-image-info.txt
+          echo "Run the container (maps port 8080):" >> docker-image-info.txt
+          echo "  docker run --rm -p 8080:8080 ghcr.io/${GITHUB_REPOSITORY}:<tag>" >> docker-image-info.txt
+          echo "" >> docker-image-info.txt
+          echo "Note: Replace <tag> with one of the tags listed above." >> docker-image-info.txt
+        shell: bash
+
+      - name: Upload Docker image info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-info
+          path: docker-image-info.txt
+
   latex:
     name: Build and release documentation PDF
     runs-on: ubuntu-latest
@@ -90,28 +130,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install TeX Live
-        uses: xu-cheng/texlive-action@v2
+      - name: Build PDF with latex-action
+        uses: xu-cheng/latex-action@v3
         with:
-          packages: >-
-            scheme-medium
-            latexmk
-            xetex
-            fontspec
-            babel
-            csquotes
-            extdash
-            hyperref
-            listings
-            geometry
-            pdfx
-            pgf
-            tabularx
-
-      - name: Build PDF with latexmk
-        working-directory: documentation
-        run: |
-          latexmk -pdf -interaction=nonstopmode -halt-on-error documentation.tex
+          root_file: documentation.tex
+          working_directory: documentation
+          latexmk_use_lualatex: false
+          latexmk_use_xelatex: false
+          args: -pdf -interaction=nonstopmode -halt-on-error
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
