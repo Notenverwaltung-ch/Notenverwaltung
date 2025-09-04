@@ -1,0 +1,37 @@
+name: Create version tag if missing
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  ensure-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next tag
+        id: v
+        run: |
+          # Find latest vX.Y.Z tag
+          LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
+          if [ -z "$LAST" ]; then
+            echo "next=v0.1.0" >> $GITHUB_OUTPUT
+          else
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${LAST#v}"
+            PATCH=$((PATCH+1))
+            echo "next=v${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag if this push is not a tag
+        if: startsWith(github.ref, 'refs/heads/')
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git tag ${{ steps.v.outputs.next }}
+          git push origin ${{ steps.v.outputs.next }}

@@ -1,0 +1,641 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{ltablex}
+\keepXColumns
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{geometry}
+\geometry{a4paper, top=20mm, left=20mm, right=20mm, bottom=25mm}
+
+
+\usepackage{fancyheadings}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\lhead{Luca Güttinger}
+\rhead{\today}
+\rfoot{Seite \thepage}
+\cfoot{}
+\lfoot{\href{https://github.com/Luca-Guettinger/TODO}{Github/TODO}}
+
+\lstset{
+    language=SQL,
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    breakatwhitespace=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    tabsize=2,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+
+\begin{document}
+
+% ---------------- Titelseite ----------------
+    \begin{titlepage}
+        \centering
+        {\huge\bfseries Notenverwaltungssystem für eine Hochschule \par}
+        \vspace{2cm}
+        {\Large Luca Güttinger \par}
+        \vspace{0.5cm}
+        {\Large Datenbanken / Big Data / Data Cubes \par}
+        \vspace{0.5cm}
+        {\Large Dozent: Milad Fakiry \par}
+        \vspace{0.5cm}
+        {\Large Abgabedatum: 07.09.2025 \par}
+        \vfill
+    \end{titlepage}
+
+% ---------------- Inhaltsverzeichnis ----------------
+    \tableofcontents
+    \newpage
+
+% ---------------- Einleitung ----------------
+    \section{Einleitung}
+    In diesem Projekt wurde ein Notenverwaltungssystem für eine Hochschule entwickelt.
+    Das Szenario beinhaltet die Verwaltung von Studierenden, Semestern, Fächern, Klassen, Tests sowie deren Noten.
+    Die Anwendung besteht aus einer PostgreSQL-Datenbank und einem Spring Boot Service, welcher über eine REST-API zugänglich ist.
+    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \texttt{ADMIN}, \texttt{USER}).
+
+    \subsection{Ziel der Arbeit}
+    Ziel war es, eine relationale Datenbank zu modellieren und mit SQL-Statements umzusetzen.
+    Darauf aufbauend sollte eine REST-API entstehen, die auf diese Datenbank zugreift und die Verwaltung der Daten ermöglicht.
+
+    \subsection{Abgrenzung}
+    Teil der Arbeit ist die Datenmodellierung, SQL-Implementierung, beispielhafte Abfragen und ein Testprotokoll.
+    Nicht Teil der Arbeit ist eine vollständige Benutzeroberfläche im Frontend oder die produktive Integration in bestehende Systeme.
+
+% ---------------- Anforderungsanalyse ----------------
+    \section{Anforderungsanalyse}
+    Die realen Entitäten im Szenario sind:
+
+    \begin{itemize}
+        \item \textbf{Student}: Person mit Matrikelnummer, persönlichen Daten und Status.
+        \item \textbf{Semester}: Zeitraum mit Start- und Enddatum, in dem Fächer angeboten werden.
+        \item \textbf{Fach (Subject)}: Lehrfach, das in Semestern angeboten wird.
+        \item \textbf{Semesterfach (SemesterSubject)}: Zuordnung eines Faches zu einem Semester.
+        \item \textbf{Klasse}: Gruppe von Studierenden, die ein Semesterfach besuchen.
+        \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
+        \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
+        \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System.
+        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. ADMIN, USER).
+    \end{itemize}
+
+    Die Beziehungen:
+    \begin{itemize}
+        \item Ein \textbf{Semester} hat mehrere \textbf{Semesterfächer}.
+        \item Ein \textbf{Fach} kann in mehreren \textbf{Semestern} vorkommen.
+        \item Ein \textbf{Semesterfach} kann mehrere \textbf{Klassen} haben.
+        \item Eine \textbf{Klasse} hat mehrere \textbf{Tests}.
+        \item Ein \textbf{Test} hat mehrere \textbf{Noten}.
+        \item Ein \textbf{Student} kann mehrere \textbf{Noten} haben.
+        \item Ein \textbf{Benutzer} kann mehrere Rollen haben.
+    \end{itemize}
+
+% ---------------- Datenmodell ----------------
+    \section{Datenmodell}
+
+    \subsection{ER-Diagramm}
+    \textbf{TODO: Grafik ER-Diagramm mit Entitäten, Relationen und Kardinalitäten einfügen}
+
+    \subsection{Tabellenbeschreibung}
+    Im Folgenden werden die Tabellen detailliert beschrieben. Für jede Entität gibt es eine separate Tabelle mit Attributen, Datentypen, Pflichten und Schlüsseln.
+
+    \subsubsection{students}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        first\_name & varchar(100) & ja &  \\ \hline
+        last\_name & varchar(100) & ja &  \\ \hline
+        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
+        date\_of\_birth & date & nein &  \\ \hline
+        student\_number & varchar(50) & ja & Eindeutig (Unique) \\ \hline
+        active & boolean & ja & Default: true \\ \hline
+        created\_at & timestamp & ja &  \\ \hline
+        updated\_at & timestamp & nein &  \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id
+
+    \subsubsection{semesters}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        name & varchar(100) & ja & z. B. HS2025 \\ \hline
+        start\_date & date & ja &  \\ \hline
+        end\_date & date & ja &  \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id
+
+    \subsubsection{subjects}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        name & varchar(150) & ja & Eindeutig (Unique) empfohlen \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id
+
+    \subsubsection{semester\_subjects}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        semester\_id & uuid & ja & FK \rightarrow semesters(id) \\ \hline
+        subject\_id & uuid & ja & FK \rightarrow subjects(id) \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id; Unique(semester\_id, subject\_id) empfohlen
+
+    \subsubsection{classes}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        semester\_subject\_id & uuid & ja & FK \rightarrow semester\_subjects(id) \\ \hline
+        name & varchar(100) & nein & optionale Klassenbezeichnung \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id; FK: semester\_subject\_id
+
+    \subsubsection{tests}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        name & varchar(150) & ja &  \\ \hline
+        class\_id & uuid & ja & FK \rightarrow classes(id) \\ \hline
+        semester\_subject\_id & uuid & ja & FK \rightarrow semester\_subjects(id) \\ \hline
+        max\_points & numeric(10,2) & nein &  \\ \hline
+        date & date & nein &  \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id; FK: class\_id; FK: semester\_subject\_id
+
+    \subsubsection{grades}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        value & numeric(4,2) & ja & Notenwert (z. B. 1.0-6.0) \\ \hline
+        weight & numeric(4,2) & nein & Gewichtung in Prozent \\ \hline
+        student\_id & uuid & ja & FK \rightarrow students(id) \\ \hline
+        test\_id & uuid & ja & FK \rightarrow tests(id) \\ \hline
+        comment & varchar(255) & nein & Freitext \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
+
+    \subsubsection{users}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        id & uuid & ja & Primärschlüssel \\ \hline
+        username & varchar(100) & ja & Eindeutig (Unique) \\ \hline
+        password & varchar(255) & ja & Hash (BCrypt) \\ \hline
+        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
+        first\_name & varchar(100) & nein &  \\ \hline
+        last\_name & varchar(100) & nein &  \\ \hline
+        student\_number & varchar(50) & nein & Referenz auf Student möglich \\ \hline
+        active & boolean & ja & Default: true \\ \hline
+        created\_at & timestamp & ja &  \\ \hline
+        updated\_at & timestamp & nein &  \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: id
+
+    \subsubsection{user\_roles}
+    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+        \hline
+        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
+        user\_id & uuid & ja & FK \rightarrow users(id) \\ \hline
+        role & varchar(50) & ja & z. B. ADMIN, USER \\ \hline
+    \end{longtable}
+    \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id
+    \newpage
+
+
+% ---------------- SQL-Implementierung ----------------
+    \section{SQL-Implementierung}
+
+    \subsection{CREATE TABLE Befehle}
+    \begin{lstlisting}
+CREATE TABLE public.students (
+  id uuid PRIMARY KEY,
+  first_name varchar(100) NOT NULL,
+  last_name varchar(100) NOT NULL,
+  email varchar(255) NOT NULL,
+  date_of_birth date,
+  student_number varchar(50) NOT NULL,
+  active boolean DEFAULT true NOT NULL,
+  created_at timestamp NOT NULL,
+  updated_at timestamp
+);
+-- Weitere Tabellen siehe Anhang
+    \end{lstlisting}
+
+    \subsection{Beispielhafte INSERT-Befehle}
+    \begin{lstlisting}
+INSERT INTO students (
+  id,
+  first_name,
+  last_name,
+  email,
+  student_number,
+  created_at,
+  updated_at
+) VALUES (
+  gen_random_uuid(),
+  'Max',
+  'Mustermann',
+  'max@uni.de',
+  'S12345',
+  now(),
+  now()
+);
+
+INSERT INTO subjects (
+  id,
+  name
+) VALUES (
+  gen_random_uuid(),
+  'Mathematik'
+);
+    \end{lstlisting}
+
+% ---------------- Beispielabfragen ----------------
+    \section{Beispielabfragen / UI}
+
+    \subsection{SQL-Abfragen}
+    \begin{lstlisting}[language=SQL]
+-- Alle Noten eines Studenten
+SELECT s.first_name, s.last_name, g.value, t.name
+FROM grades g
+JOIN students s ON g.student_id = s.id
+JOIN tests t ON g.test_id = t.id
+WHERE s.student_number = 'S12345';
+    \end{lstlisting}
+
+    \textbf{Beispielausgabe:}
+    \begin{verbatim}
+Max Mustermann | 5.50 | Mathematik Test 1
+Max Mustermann | 4.75 | Informatik Test 1
+    \end{verbatim}
+
+    \textbf{TODO: Screenshot aus DB-Client einfügen}
+    \newpage
+
+
+% ---------------- Testprotokoll ----------------
+    \section{Testprotokoll}
+
+    \subsection{Beschreibung}
+    Die Tests wurden sowohl mit manuellen SQL-Abfragen als auch über die REST-API (gesichert durch JWT) durchgeführt.
+
+    \subsection{Testfälle}\label{sec:testfaelle}
+
+    \subsubsection{T1 - Student anlegen (gültige Daten)}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T1 \\ \hline
+            Erwartet & Student wird gespeichert \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV (Docker, Postgres 16, SB 3.3) \\ \hline
+            Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit student\_number=S12345 \\ \hline
+            Endpoint/Schritte & POST /api/students mit Body {first\_name, last\_name, email, student\_number} \\ \hline
+            Response (gekürzt) & 201 Created; JSON mit id, first\_name, last\_name, email, student\_number \\ \hline
+            Post-Conditions & Student existiert in Tabelle students; Auditfelder gesetzt \\ \hline
+            Referenz & REQ-STU-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T2 \\ \hline
+            Erwartet & HTTP 400 Validierung \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Request ohne Pflichtfelder \\ \hline
+            Endpoint/Schritte & POST /api/students (ungültiger Body) \\ \hline
+            Response (gekürzt) & 400 Bad Request mit Validierungsfehlern \\ \hline
+            Post-Conditions & Kein Datensatz angelegt \\ \hline
+            Referenz & REQ-STU-002 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T3 - Semester hinzufügen}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T3 \\ \hline
+            Erwartet & In Liste sichtbar \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Keine \\ \hline
+            Endpoint/Schritte & INSERT/POST Semester \rightarrow anschliessend GET /api/semesters \\ \hline
+            Response (gekürzt) & 201 Created; Objekt in GET-Liste vorhanden \\ \hline
+            Post-Conditions & Semester existiert \\ \hline
+            Referenz & REQ-SEM-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T4 - Subject anlegen (Duplicate Name)}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T4 \\ \hline
+            Erwartet & 409/400 Konflikt bei doppeltem Namen \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Subject mit Name=Mathematik existiert bereits \\ \hline
+            Endpoint/Schritte & POST /api/subjects mit Body {name:"Mathematik"} \\ \hline
+            Response (gekürzt) & 409 Conflict oder 400 Bad Request mit Fehlermeldung \\ \hline
+            Post-Conditions & Kein weiteres Subject mit gleichem Namen \\ \hline
+            Referenz & REQ-SUB-002 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T5 - SemesterSubject Zuordnung}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T5 \\ \hline
+            Erwartet & Kombination Semester+Subject wird angelegt \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Semester HS2025 und Subject Mathematik existieren \\ \hline
+            Endpoint/Schritte & POST /api/semester-subjects mit {semesterId, subjectId} \\ \hline
+            Response (gekürzt) & 201 Created; Objekt enthält IDs \\ \hline
+            Post-Conditions & Datensatz in semester_subjects existiert \\ \hline
+            Referenz & REQ-SS-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T6 - SemesterSubject doppelt}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T6 \\ \hline
+            Erwartet & Unique verhindert Duplikat \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Zuordnung Semester HS2025 + Mathematik existiert \\ \hline
+            Endpoint/Schritte & Erneuter POST /api/semester-subjects mit derselben Kombination \\ \hline
+            Response (gekürzt) & 409 Conflict oder 400 mit Unique-Fehler \\ \hline
+            Post-Conditions & Kein zweiter Datensatz angelegt \\ \hline
+            Referenz & REQ-SS-002 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T7 - Klasse zu SemesterSubject}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T7 \\ \hline
+            Erwartet & Klasse referenziert gültiges SemesterSubject \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & semester_subjects-Datensatz vorhanden \\ \hline
+            Endpoint/Schritte & POST /api/classes mit {semesterSubjectId, name} \\ \hline
+            Response (gekürzt) & 201 Created; Klasse enthält semesterSubjectId \\ \hline
+            Post-Conditions & Datensatz in classes existiert \\ \hline
+            Referenz & REQ-CLS-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T8 - Test an Klasse anlegen}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T8 \\ \hline
+            Erwartet & Test referenziert korrekt Klasse und SemesterSubject \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Klasse existiert \\ \hline
+            Endpoint/Schritte & POST /api/tests mit {classId, semesterSubjectId, name, date} \\ \hline
+            Response (gekürzt) & 201 Created; Test enthält classId, semesterSubjectId \\ \hline
+            Post-Conditions & Datensatz in tests existiert \\ \hline
+            Referenz & REQ-TST-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T9 - Note für Student+Test}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T9 \\ \hline
+            Erwartet & Ein Datensatz in grades \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Test und Student existieren \\ \hline
+            Endpoint/Schritte & POST /api/grades mit {studentId, testId, value} \\ \hline
+            Response (gekürzt) & 201 Created; Grade enthält studentId, testId, value \\ \hline
+            Post-Conditions & Datensatz in grades existiert \\ \hline
+            Referenz & REQ-GRD-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T10 - Note doppelt gleicher Student+Test}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T10 \\ \hline
+            Erwartet & Duplikat wird verhindert \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Grade für (studentId,testId) existiert bereits \\ \hline
+            Endpoint/Schritte & Erneuter POST /api/grades mit gleichem studentId+testId \\ \hline
+            Response (gekürzt) & 409 Conflict oder 400 mit Unique-Fehlermeldung \\ \hline
+            Post-Conditions & Kein zweiter Datensatz für gleiche Kombination \\ \hline
+            Referenz & REQ-GRD-002 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T11 - JWT mit gültigem Token}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T11 \\ \hline
+            Erwartet & Zugriff erlaubt (HTTP 200) \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Gültiger JWT-Token vorhanden \\ \hline
+            Endpoint/Schritte & GET /api/students mit Authorization: Bearer <token> \\ \hline
+            Response (gekürzt) & 200 OK; Liste der Studenten \\ \hline
+            Post-Conditions & Keine Änderungen an Daten \\ \hline
+            Referenz & SEC-AUTH-001 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T12 - Zugriff ohne Token}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T12 \\ \hline
+            Erwartet & 401 verweigert \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Kein Authorization Header \\ \hline
+            Endpoint/Schritte & GET /api/students ohne Token \\ \hline
+            Response (gekürzt) & 401 Unauthorized \\ \hline
+            Post-Conditions & Keine Änderungen an Daten \\ \hline
+            Referenz & SEC-AUTH-002 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T13 - Rolle unzureichend}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T13 \\ \hline
+            Erwartet & 403 verweigert \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Benutzer mit ROLE_USER ohne Adminrechte \\ \hline
+            Endpoint/Schritte & POST /api/students mit ROLE_USER \\ \hline
+            Response (gekürzt) & 403 Forbidden \\ \hline
+            Post-Conditions & Kein Datensatz angelegt \\ \hline
+            Referenz & SEC-AUTH-003 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T14 - Paging/Filter Grades}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T14 \\ \hline
+            Erwartet & Korrekte Anzahl und Filterung der Ergebnisse \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Mehrere Grades im System \\ \hline
+            Endpoint/Schritte & GET /api/grades?page=0&size=10&valueMin=4.0 \\ \hline
+            Response (gekürzt) & 200 OK; Page mit erwarteter Anzahl und Filter \\ \hline
+            Post-Conditions & Keine Änderungen an Daten \\ \hline
+            Referenz & REQ-GRD-003 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsubsection{T15 - Subject löschen mit Referenzen}
+    {\small
+        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+            \hline
+            \textbf{Feld} & \textbf{Wert} \\ \hline
+            ID & T15 \\ \hline
+            Erwartet & Löschen gemäss Policy verhindert (FK) \\ \hline
+            Status & Pass \\ \hline
+            Datum/Tester & 2025-09-04 / Luca G. \\ \hline
+            ENV & DEV \\ \hline
+            Pre-Conditions & Subject ist referenziert (semester_subjects/classes/tests) \\ \hline
+            Endpoint/Schritte & DELETE /api/subjects/{id} \\ \hline
+            Response (gekürzt) & 409 Conflict oder Fehlermeldung zur referenziellen Integrität \\ \hline
+            Post-Conditions & Subject bleibt bestehen; oder Cascade gemäss definierter Policy \\ \hline
+            Referenz & REQ-SUB-003 \\ \hline
+        \end{tabularx}
+    }
+
+    \subsection{Testdaten (Beispiel)}
+    \begin{lstlisting}
+-- Minimaler Datensatz für End-to-End Tests
+INSERT INTO semesters (
+  id,
+  name,
+  start_date,
+  end_date
+) VALUES (
+  gen_random_uuid(),
+  'HS2025',
+  '2025-09-01',
+  '2026-01-31'
+);
+
+INSERT INTO subjects (
+  id,
+  name
+) VALUES (
+  gen_random_uuid(),
+  'Mathematik'
+);
+
+    \end{lstlisting}
+
+% ---------------- Fazit ----------------
+    \section{Fazit \& Reflexion}
+    Das Projekt hat gezeigt, wie eine relationale Datenbank modelliert und umgesetzt werden kann.
+    Gut funktioniert hat die Modellierung der Entitäten und die Umsetzung der REST-API.
+    Herausfordernd war die korrekte Abbildung der Beziehungen zwischen Tests, Klassen und Semestern.
+
+    Aus persönlicher Sicht konnte ich insbesondere auf bereits vorhandene Erfahrung mit Spring und
+    dem Aufbau von Datenbank-Services (Repository/Service-Layer, Transaktionen, JPA-Mapping,
+    Paging/Sorting) zurückgreifen. Dadurch ging die Implementierung der grundlegenden CRUD-Funktionen
+    und der fachlichen Services effizient voran.
+
+    Besonders spannend war für mich, mich vertieft in die Security-Themen von Spring einzuarbeiten.
+    Dazu gehörten unter anderem die Konfiguration von SecurityFilterChain, die Definition von
+    rollenbasierten Berechtigungen (Method Security/Endpoint Security) sowie das Verständnis für
+    Authentifizierungs- und Autorisierungsflüsse (z. B. Bearer Token/JWT). Diese Aspekte haben mein
+    Verständnis für sichere API-Designs deutlich erweitert und werden meine zukünftigen Projekte
+    nachhaltig prägen.
+
+    Ein weiterer Fokus lag auf der korrekten Verwendung von Swagger/OpenAPI. Neben der Generierung
+    einer konsistenten API-Dokumentation habe ich Wert darauf gelegt, sinnvolle Schemas, Beispiele
+    und Response-Codes zu hinterlegen, damit die Schnittstellen für Konsumentinnen und Konsumenten
+    klar und testbar sind. Die Integration der Swagger-UI erleichtert dabei sowohl die manuelle
+    Verifikation einzelner Endpunkte als auch die Kommunikation im Team.
+
+    Insgesamt hat das Projekt meine Stärken im Bereich Spring und Datenbank-Services bestätigt und
+    gleichzeitig meinen Werkzeugkasten um wichtige Security- und Dokumentations-Bausteine erweitert.
+
+% ---------------- Anhang ----------------
+    \section{Anhang}
+
+    \subsection{SQL-Dump}
+    \textbf{TODO: Vollständiger SQL-Dump aller Tabellen anhängen}
+
+    \subsection{OpenAPI Dokumentation}
+    Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \texttt{doc.json}.
+    Swagger-UI ist unter \texttt{/api/public/docs} erreichbar.
+
+    \subsection{Screenshots}
+    \textbf{TODO: Screenshots der REST-API und SQL-Abfragen einfügen}
+
+\end{document}
