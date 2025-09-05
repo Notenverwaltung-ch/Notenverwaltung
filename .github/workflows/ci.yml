@@ -171,14 +171,8 @@ jobs:
           working_directory: documentation
           latexmk_use_lualatex: false
           latexmk_use_xelatex: false
-          # strong diagnostics:
+          extra_system_packages: ghostscript
           args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
-          # install any TeX pkgs you need before compiling:
-          pre_compile: |
-            tlmgr update --self
-            tlmgr install \
-              ltablex tabularx ragged2e microtype babel-german xurl \
-              listings listingsutf8 fancyhdr geometry hyperref xcolor lm
 
       - name: Upload PDF artifact
         if: always()
