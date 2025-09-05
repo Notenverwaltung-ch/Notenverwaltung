@@ -1,8 +1,8 @@
-name: Create version tag if missing
+name: Create version tag if missing (including dev prereleases)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
 
 jobs:
   ensure-version:
@@ -18,22 +18,35 @@ jobs:
       - name: Determine next tag
         id: v
         run: |
-          # Find latest vX.Y.Z tag
+          BRANCH="${GITHUB_REF_NAME}"
           LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
           if [ -z "$LAST" ]; then
-            echo "next=v0.1.0" >> $GITHUB_OUTPUT
+            BASE_MAJOR=0
+            BASE_MINOR=1
+            BASE_PATCH=0
           else
             IFS='.' read -r MAJOR MINOR PATCH <<< "${LAST#v}"
-            PATCH=$((PATCH+1))
-            echo "next=v${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+            BASE_MAJOR=$MAJOR
+            BASE_MINOR=$MINOR
+            BASE_PATCH=$PATCH
+          fi
+
+          if [ "$BRANCH" = "develop" ]; then
+            # For develop, create a prerelease tag based on the next minor version with beta identifier
+            NEXT_MINOR=$((BASE_MINOR+1))
+            DATE=$(date +"%Y%m%d")
+            SHA7=${GITHUB_SHA::7}
+            echo "next=v${BASE_MAJOR}.${NEXT_MINOR}.0-beta.${DATE}-${SHA7}" >> $GITHUB_OUTPUT
+          else
+            # For main/master, bump patch version for a regular release tag
+            NEXT_PATCH=$((BASE_PATCH+1))
+            echo "next=v${BASE_MAJOR}.${BASE_MINOR}.${NEXT_PATCH}" >> $GITHUB_OUTPUT
           fi
 
       - name: Create tag if this push is not a tag
-        id: create
         if: startsWith(github.ref, 'refs/heads/')
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git tag ${{ steps.v.outputs.next }}
           git push origin ${{ steps.v.outputs.next }}
-          echo "created=${{ steps.v.outputs.next }}" >> $GITHUB_OUTPUT

@@ -38,27 +38,12 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Create JAR usage instructions
-        run: |
-          echo "How to run the application JAR" > RUN-README.txt
-          echo "" >> RUN-README.txt
-          echo "Prerequisites: Java 17 Runtime installed (e.g., Temurin 17)." >> RUN-README.txt
-          echo "" >> RUN-README.txt
-          echo "Run command:" >> RUN-README.txt
-          echo "  java -jar app.jar" >> RUN-README.txt
-          echo "" >> RUN-README.txt
-          echo "Alternatively, use the Docker image pushed to GHCR (see docker-image-info artifact in the docker job)." >> RUN-README.txt
-          echo "" >> RUN-README.txt
-          echo "Note: The service listens on port 8080 by default." >> RUN-README.txt
-        shell: bash
-
       - name: Upload build artifacts (JAR)
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
           path: |
             build/libs/*.jar
-            RUN-README.txt
 
   docker:
     name: Build and push Docker image
@@ -136,36 +121,17 @@ jobs:
 
       - name: Normalize JAR filename and verify presence
         run: |
-          echo "Workspace: $(pwd)"
-          ls -la
-          echo "Contents of build/libs (after artifact download):" || true
           mkdir -p build/libs
-          ls -la build/libs || true
-
-          # Collect possible jar locations. Note: the download-artifact action preserves
-          # original paths inside the archive, so downloading to build/libs may create
-          # a nested build/libs structure (build/libs/build/libs/*.jar).
           shopt -s nullglob
           JAR_CANDIDATES=(build/libs/*.jar build/libs/build/libs/*.jar)
-
           COUNT=${#JAR_CANDIDATES[@]}
           if [ "$COUNT" -eq 0 ]; then
-            echo "No JAR found after artifact download (checked build/libs and build/libs/build/libs)" >&2
-            echo "Tree for debugging:" >&2
             find build -maxdepth 3 -type f -name "*.jar" -print || true
             exit 1
           fi
-
-          # Pick the first candidate and normalize the name to app.jar under build/libs
           SRC_JAR="${JAR_CANDIDATES[0]}"
-          echo "Using JAR: $SRC_JAR"
           cp "$SRC_JAR" build/libs/app.jar
-
-          # Copy to repository root so Docker build context surely includes it
           cp build/libs/app.jar ./app.jar
-          echo "Root contents after copying app.jar:"
-          ls -la
-          ls -la build/libs
         shell: bash
 
       - name: Build and push
@@ -176,29 +142,6 @@ jobs:
           push: ${{ steps.dtags.outputs.push == 'true' }}
           tags: ${{ steps.dtags.outputs.tags }}
 
-      - name: Create Docker image usage instructions
-        run: |
-          echo "Docker image pushed to GHCR" > docker-image-info.txt
-          echo "" >> docker-image-info.txt
-          echo "Repository: ghcr.io/${GITHUB_REPOSITORY}" >> docker-image-info.txt
-          echo "" >> docker-image-info.txt
-          echo "Available tags:" >> docker-image-info.txt
-          echo "${{ steps.dtags.outputs.tags }}" >> docker-image-info.txt
-          echo "" >> docker-image-info.txt
-          echo "Pull the image:" >> docker-image-info.txt
-          echo "  docker pull ghcr.io/${GITHUB_REPOSITORY}:<tag>" >> docker-image-info.txt
-          echo "" >> docker-image-info.txt
-          echo "Run the container (maps port 8080):" >> docker-image-info.txt
-          echo "  docker run --rm -p 8080:8080 ghcr.io/${GITHUB_REPOSITORY}:<tag>" >> docker-image-info.txt
-          echo "" >> docker-image-info.txt
-          echo "Note: Replace <tag> with one of the tags listed above." >> docker-image-info.txt
-        shell: bash
-
-      - name: Upload Docker image info artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image-info
-          path: docker-image-info.txt
 
   latex:
     name: Build and release documentation PDF
@@ -229,45 +172,11 @@ jobs:
           name: documentation-pdf
           path: documentation/documentation.pdf
 
-      - name: Upload LaTeX logs (for debugging)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: latex-logs
-          path: |
-            documentation/*.log
-            documentation/*.aux
-            documentation/*.toc
-
-      - name: Determine version
-        id: version
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          else
-            # For main/master branch pushes, prefer the latest semver tag created by release-version workflow
-            # Fallback to a date-based identifier for non-release branches
-            BRANCH=${GITHUB_REF_NAME}
-            if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
-              LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
-              if [[ -n "$LAST" ]]; then
-                echo "version=${LAST}" >> $GITHUB_OUTPUT
-                exit 0
-              fi
-            fi
-            DATE=$(date +'%Y.%m.%d')
-            echo "version=v${DATE}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          fi
-      
 
       - name: Create GitHub Release (tags only)
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push' && github.ref_type == 'tag'
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Release ${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
           files: |
             documentation/documentation.pdf
         env:
