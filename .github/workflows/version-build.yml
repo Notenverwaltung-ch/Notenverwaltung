@@ -213,11 +213,20 @@ jobs:
           cp build/libs/app.jar ./app.jar
         shell: bash
 
+
+      - name: Set image tag (lowercase owner for GHCR)
+        id: img
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           push: true
-          tags: notenverwaltung-ch/notenverwaltung:${{ needs.compute-version.outputs.version }}
+          tags: ${{ steps.img.outputs.name }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
