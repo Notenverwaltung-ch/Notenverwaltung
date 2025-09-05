@@ -142,6 +142,24 @@ jobs:
           push: ${{ steps.dtags.outputs.push == 'true' }}
           tags: ${{ steps.dtags.outputs.tags }}
 
+      - name: How to pull and run the image
+        if: ${{ steps.dtags.outputs.push == 'true' }}
+        run: |
+          echo "Docker image pushed to GHCR."
+          echo ""
+          echo "Repository: ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo ""
+          echo "Pull and run commands for all tags:"
+          while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+            echo "  docker pull $tag"
+            echo "  docker run --rm -p 8080:8080 $tag"
+          done <<< "${{ steps.dtags.outputs.tags }}"
+          echo ""
+          echo "If needed, authenticate with GHCR first:"
+          echo "  echo \"${{ secrets.GITHUB_TOKEN }}\" | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+        shell: bash
+
 
   latex:
     name: Build and release documentation PDF
