@@ -1,26 +1,19 @@
-name: Version Tag and Build
+name: Build & Tag with Shared Version
 
-on:
-  push:
-    branches:
-      - '**'
+on: [push]
 
 jobs:
-  build-and-tag:
+  compute-version:
+    name: Compute Version
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      base: ${{ steps.version.outputs.base }}
     steps:
       - name: Checkout repository with full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
 
       - name: Determine version from Gradle and compute patch
         id: version
@@ -42,8 +35,8 @@ jobs:
           git fetch --tags --force
 
           # Find highest patch for tags like BASE_VERSION.Z without suffix
-          HIGHEST_PATCH=$(git tag --list "${BASE_VERSION}.*" | grep -E "^${BASE_VERSION}\\.[0-9]+$" | sed -E "s/^${BASE_VERSION}\.([0-9]+)/\1/" | sort -n | tail -n1)
-          if [ -z "$HIGHEST_PATCH" ]; then
+          HIGHEST_PATCH=$(git tag --list "${BASE_VERSION}.*" | grep -E "^${BASE_VERSION}\\.[0-9]+$" | sed -E "s/^${BASE_VERSION}\.([0-9]+)/\1/" | sort -n | tail -n1 || true)
+          if [ -z "${HIGHEST_PATCH:-}" ]; then
             HIGHEST_PATCH=-1
           fi
 
@@ -56,19 +49,35 @@ jobs:
           fi
 
           echo "Computed version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "base=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "base=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-and-tag:
+    name: Tag, Build, Test, & Upload
+    needs: compute-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Create and push tag
-        if: always()
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        shell: bash
         run: |
           set -euo pipefail
-          # Configure git identity for tagging
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          # Only create tag if it doesn't already exist
           if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
             echo "Tag ${VERSION} already exists. Skipping tag creation."
           else
@@ -87,16 +96,14 @@ jobs:
 
       - name: Locate built jars and prepare artifact name
         id: jars
-        shell: bash
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
           mkdir -p upload
-          # Copy all jars from build/libs
           for f in build/libs/*.jar; do
-            # Rename to notenverwaltung-<version>.jar; if multiple, append classifier
             base="notenverwaltung-${VERSION}"
             if [[ "$f" =~ (-plain|-sources|-javadoc)\.jar$ ]]; then
               classifier=$(echo "$f" | sed -E 's/.*(-plain|-sources|-javadoc)\.jar/\1/')
@@ -105,10 +112,52 @@ jobs:
               cp "$f" "upload/${base}.jar"
             fi
           done
-          echo "dir=upload" >> $GITHUB_OUTPUT
+          echo "dir=upload" >> "$GITHUB_OUTPUT"
 
       - name: Upload jars artifact
         uses: actions/upload-artifact@v4
         with:
-          name: notenverwaltung-${{ steps.version.outputs.version }}
+          name: notenverwaltung-${{ needs.compute-version.outputs.version }}
           path: ${{ steps.jars.outputs.dir }}
+
+  latex:
+    name: Build documentation PDF
+    needs: compute-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build PDF with latex-action
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: documentation.tex
+          working_directory: documentation
+          latexmk_use_lualatex: false
+          latexmk_use_xelatex: false
+          extra_system_packages: ghostscript
+          args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
+          pre_compile: |
+            tlmgr update --self || true
+            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array || true
+      - name: Prepare version-suffixed PDF
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="documentation/documentation.pdf"
+          if [ ! -f "$SRC" ]; then
+            echo "PDF not found: $SRC" >&2
+            ls -al documentation || true
+            exit 1
+          fi
+          cp "$SRC" "documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf"
+
+      - name: Upload PDF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
+          path: documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf
