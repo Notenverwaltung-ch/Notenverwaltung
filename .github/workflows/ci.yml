@@ -274,10 +274,19 @@ jobs:
             echo "version=${BASE}-${SAFE_REF}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download artifacts (all)
+      - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
+          name: notenverwaltung-jar-${{ steps.ver.outputs.version }}
           path: artifacts
+          merge-multiple: true
+
+      - name: Download documentation PDF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: notenverwaltung-documentation-${{ steps.ver.outputs.version }}
+          path: artifacts
+          merge-multiple: true
 
 
       - name: Collect and rename release files
