@@ -87,6 +87,7 @@ jobs:
           SHORT_SHA=${GITHUB_SHA::7}
           echo "repo=$REPO" >> $GITHUB_OUTPUT
           TAGS=""
+          PUSH=false
           if [[ "$GITHUB_REF_NAME" == "develop" ]]; then
             # Find latest vX.Y.Z tag and bump minor for beta
             LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
@@ -99,18 +100,29 @@ jobs:
             fi
             echo "base=$BASE" >> $GITHUB_OUTPUT
             TAGS+="$REPO:${BASE}-beta-${SHORT_SHA}"
+            PUSH=true
           elif [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_REF_NAME" == "feature"/* ]]; then
             SAFE_BRANCH=${GITHUB_REF_NAME//\//-}
             TAGS+="$REPO:${SAFE_BRANCH}-${SHORT_SHA}"
           elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             TAGS+="$REPO:${GITHUB_REF_NAME#v}"
+            PUSH=true
           else
             SAFE_REF=${GITHUB_REF_NAME//\//-}
             TAGS+="$REPO:${SAFE_REF}-${SHORT_SHA}"
           fi
           # docker/build-push-action accepts newline or comma separated list
-          # Use newline to be safe
-          echo -e "tags<<EOF\n$TAGS\nEOF" >> $GITHUB_OUTPUT
+          # Use newline to be safe. Use proper heredoc to avoid echo -e pitfalls.
+          {
+            echo "tags<<EOF"
+            echo "$TAGS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          echo "push=$PUSH" >> $GITHUB_OUTPUT
+          if [[ "$PUSH" == "true" && -z "$TAGS" ]]; then
+            echo "[ERROR] Push requested but no docker tags were computed" >&2
+            exit 1
+          fi
         shell: bash
 
       - name: Set up Docker Buildx
@@ -161,7 +173,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          push: ${{ github.ref_type == 'tag' || github.ref_name == 'develop' }}
+          push: ${{ steps.dtags.outputs.push == 'true' }}
           tags: ${{ steps.dtags.outputs.tags }}
 
       - name: Create Docker image usage instructions
