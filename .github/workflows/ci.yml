@@ -74,12 +74,13 @@ jobs:
             ls -al build/libs || true
             exit 1
           fi
+          install -d build/libs
           cp "$PICK" "build/libs/notenverwaltung-${{ steps.pav.outputs.version }}.jar"
 
       - name: Upload build artifact (version-suffixed non-plain JAR)
         uses: actions/upload-artifact@v4
         with:
-          name: notenverwaltung-${{ steps.pav.outputs.version }}.jar
+          name: notenverwaltung-jar-${{ steps.pav.outputs.version }}
           path: build/libs/notenverwaltung-${{ steps.pav.outputs.version }}.jar
 
   docker:
@@ -142,12 +143,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: build/libs
+          merge-multiple: true
 
       - name: Normalize JAR filename and verify presence
         run: |
           mkdir -p build/libs
           shopt -s nullglob
-          JAR_CANDIDATES=(build/libs/*.jar build/libs/build/libs/*.jar)
+          JAR_CANDIDATES=(build/libs/*.jar build/libs/**/*.jar)
           COUNT=${#JAR_CANDIDATES[@]}
           if [ "$COUNT" -eq 0 ]; then
             find build -maxdepth 3 -type f -name "*.jar" -print || true
@@ -234,14 +236,14 @@ jobs:
             ls -al documentation || true
             exit 1
           fi
-          cp "$SRC" "documentation/Dokumentation-${{ steps.pav.outputs.version }}.pdf"
+          cp "$SRC" "documentation/notenverwaltung-documentation-${{ steps.pav.outputs.version }}.pdf"
 
       - name: Upload PDF artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Dokumentation-${{ steps.pav.outputs.version }}.pdf
-          path: documentation/Dokumentation-${{ steps.pav.outputs.version }}.pdf
+          name: notenverwaltung-documentation-${{ steps.pav.outputs.version }}
+          path: documentation/notenverwaltung-documentation-${{ steps.pav.outputs.version }}.pdf
 
   release:
     name: Create GitHub Release with artifacts
@@ -286,16 +288,14 @@ jobs:
             exit 1
           fi
           cp "${FILTERED_JARS[0]}" "release/notenverwaltung-${VERSION}.jar"
-          # Find PDF
           # Find PDF (accept any pdf)
           PDFS=(artifacts/*.pdf artifacts/**/*.pdf)
           if [ ${#PDFS[@]} -eq 0 ]; then
-              echo "No PDF found in artifacts" >&2
-              find artifacts -type f -name "*.pdf" -print || true
-              exit 1
-            fi
-            PDF_CANDIDATE="${PDFS[0]}"
+            echo "No PDF found in artifacts" >&2
+            find artifacts -type f -name "*.pdf" -print || true
+            exit 1
           fi
+          PDF_CANDIDATE="${PDFS[0]}"
           cp "$PDF_CANDIDATE" "release/Dokumentation-${VERSION}.pdf"
 
       - name: Create GitHub Release
