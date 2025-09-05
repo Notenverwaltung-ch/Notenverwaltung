@@ -119,3 +119,45 @@ jobs:
         with:
           name: notenverwaltung-${{ needs.compute-version.outputs.version }}
           path: ${{ steps.jars.outputs.dir }}
+
+  latex:
+    name: Build documentation PDF
+    needs: compute-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build PDF with latex-action
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: documentation.tex
+          working_directory: documentation
+          latexmk_use_lualatex: false
+          latexmk_use_xelatex: false
+          extra_system_packages: ghostscript
+          args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
+          pre_compile: |
+            tlmgr update --self || true
+            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array || true
+      - name: Prepare version-suffixed PDF
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="documentation/documentation.pdf"
+          if [ ! -f "$SRC" ]; then
+            echo "PDF not found: $SRC" >&2
+            ls -al documentation || true
+            exit 1
+          fi
+          cp "$SRC" "documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf"
+
+      - name: Upload PDF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
+          path: documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf
