@@ -262,13 +262,29 @@ jobs:
         id: ver
         run: echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
+      - name: Check that tag commit is on master branch
+        id: onmaster
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin master:refs/remotes/origin/master
+          if git merge-base --is-ancestor "$GITHUB_SHA" "origin/master"; then
+            echo "onmaster=true" >> "$GITHUB_OUTPUT"
+            echo "Tag commit is on master. Proceeding with release."
+          else
+            echo "onmaster=false" >> "$GITHUB_OUTPUT"
+            echo "Tag commit is NOT on master. Skipping release steps."
+          fi
+
       - name: Download artifacts (all)
+        if: steps.onmaster.outputs.onmaster == 'true'
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
 
       - name: Collect and rename release files
+        if: steps.onmaster.outputs.onmaster == 'true'
         run: |
           set -euo pipefail
           VERSION="${{ steps.ver.outputs.version }}"
@@ -299,6 +315,7 @@ jobs:
           cp "$PDF_CANDIDATE" "release/Dokumentation-${VERSION}.pdf"
 
       - name: Create GitHub Release
+        if: steps.onmaster.outputs.onmaster == 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: |
