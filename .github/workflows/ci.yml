@@ -46,11 +46,17 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VER="$GITHUB_REF_NAME"
           else
-            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)"/\1/p' build.gradle.kts | head -n1)
-            [ -n "$BASE" ] || BASE="0.0"
-            SAFE_REF=${GITHUB_REF_NAME//\//-}
+            # Read full semantic version from Gradle (e.g., 25.0.3)
+            FULL=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\(\.[0-9][0-9]*\)?\)"/\1/p' build.gradle.kts | head -n1)
+            if [[ -z "$FULL" ]]; then
+              FULL="0.0.0"
+            fi
             SHORT_SHA=${GITHUB_SHA::7}
-            VER="${BASE}-${SAFE_REF}-${SHORT_SHA}"
+            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$GITHUB_REF_NAME" == "master" || "$GITHUB_REF_NAME" == "main" ) ]]; then
+              VER="$FULL"
+            else
+              VER="${FULL}-${SHORT_SHA}"
+            fi
           fi
           echo "version=$VER" >> "$GITHUB_OUTPUT"
 
@@ -217,11 +223,17 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VER="$GITHUB_REF_NAME"
           else
-            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)"/\1/p' build.gradle.kts | head -n1)
-            [ -n "$BASE" ] || BASE="0.0"
-            SAFE_REF=${GITHUB_REF_NAME//\//-}
+            # Read full semantic version from Gradle (e.g., 25.0.3)
+            FULL=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\(\.[0-9][0-9]*\)?\)"/\1/p' build.gradle.kts | head -n1)
+            if [[ -z "$FULL" ]]; then
+              FULL="0.0.0"
+            fi
             SHORT_SHA=${GITHUB_SHA::7}
-            VER="${BASE}-${SAFE_REF}-${SHORT_SHA}"
+            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$GITHUB_REF_NAME" == "master" || "$GITHUB_REF_NAME" == "main" ) ]]; then
+              VER="$FULL"
+            else
+              VER="${FULL}-${SHORT_SHA}"
+            fi
           fi
           echo "version=$VER" >> "$GITHUB_OUTPUT"
 
