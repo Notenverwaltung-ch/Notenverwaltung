@@ -38,12 +38,49 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Upload build artifacts (JAR)
+      - name: Compute pipeline artifact version
+        id: pav
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VER="$GITHUB_REF_NAME"
+          else
+            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)"/\1/p' build.gradle.kts | head -n1)
+            [ -n "$BASE" ] || BASE="0.0"
+            SAFE_REF=${GITHUB_REF_NAME//\//-}
+            SHORT_SHA=${GITHUB_SHA::7}
+            VER="${BASE}-${SAFE_REF}-${SHORT_SHA}"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare version-suffixed JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/libs
+          shopt -s nullglob
+          CANDS=(build/libs/*.jar)
+          # pick first non-plain
+          PICK=""
+          for j in "${CANDS[@]}"; do
+            if [[ "$(basename "$j")" == *plain* ]]; then
+              continue
+            fi
+            PICK="$j"; break
+          done
+          if [[ -z "$PICK" ]]; then
+            echo "No non-plain jar found in build/libs" >&2
+            ls -al build/libs || true
+            exit 1
+          fi
+          cp "$PICK" "build/libs/notenverwaltung-${{ steps.pav.outputs.version }}.jar"
+
+      - name: Upload build artifact (version-suffixed non-plain JAR)
         uses: actions/upload-artifact@v4
         with:
           name: notenverwaltung
-          path: |
-            build/libs/*.jar
+          path: build/libs/notenverwaltung-${{ steps.pav.outputs.version }}.jar
 
   docker:
     name: Build and push Docker image
@@ -171,12 +208,41 @@ jobs:
             tlmgr update --self || true
             tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array || true
 
+      - name: Compute pipeline artifact version
+        id: pav
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VER="$GITHUB_REF_NAME"
+          else
+            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)"/\1/p' build.gradle.kts | head -n1)
+            [ -n "$BASE" ] || BASE="0.0"
+            SAFE_REF=${GITHUB_REF_NAME//\//-}
+            SHORT_SHA=${GITHUB_SHA::7}
+            VER="${BASE}-${SAFE_REF}-${SHORT_SHA}"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare version-suffixed PDF
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="documentation/documentation.pdf"
+          if [ ! -f "$SRC" ]; then
+            echo "PDF not found: $SRC" >&2
+            ls -al documentation || true
+            exit 1
+          fi
+          cp "$SRC" "documentation/Dokumentation-${{ steps.pav.outputs.version }}.pdf"
+
       - name: Upload PDF artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Dokumentation
-          path: documentation/documentation.pdf
+          path: documentation/Dokumentation-${{ steps.pav.outputs.version }}.pdf
 
   release:
     name: Create GitHub Release with artifacts
@@ -215,12 +281,18 @@ jobs:
           # Find JAR built by Gradle
           shopt -s nullglob
           JARS=(artifacts/*.jar artifacts/build/libs/*.jar artifacts/**/*.jar)
-          if [ ${#JARS[@]} -eq 0 ]; then
-            echo "No JAR found in artifacts" >&2
-            find artifacts -type f -print
+          # Filter out any jar that contains 'plain' in its name
+          FILTERED_JARS=()
+          for j in "${JARS[@]}"; do
+            [[ "$(basename "$j")" == *plain* ]] && continue
+            FILTERED_JARS+=("$j")
+          done
+          if [ ${#FILTERED_JARS[@]} -eq 0 ]; then
+            echo "No non-plain JAR found in artifacts" >&2
+            find artifacts -type f -name "*.jar" -print || true
             exit 1
           fi
-          cp "${JARS[0]}" "release/notenverwaltung-${VERSION}.jar"
+          cp "${FILTERED_JARS[0]}" "release/notenverwaltung-${VERSION}.jar"
           # Find PDF
           PDF_CANDIDATE="artifacts/documentation.pdf"
           if [ ! -f "$PDF_CANDIDATE" ]; then
