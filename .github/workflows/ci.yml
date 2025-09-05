@@ -248,7 +248,8 @@ jobs:
   release:
     name: Create GitHub Release with artifacts
     needs: [build, latex]
-    if: startsWith(github.ref, 'refs/tags/')
+    # Run on tag refs OR directly on main/master branch pushes
+    if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -258,9 +259,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine version from tag
+      - name: Determine version
         id: ver
-        run: echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            # Recompute same version format as in build/latex jobs for consistency
+            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)"/\1/p' build.gradle.kts | head -n1)
+            [ -n "$BASE" ] || BASE="0.0"
+            SAFE_REF=${GITHUB_REF_NAME//\//-}
+            SHORT_SHA=${GITHUB_SHA::7}
+            echo "version=${BASE}-${SAFE_REF}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download artifacts (all)
         uses: actions/download-artifact@v4
