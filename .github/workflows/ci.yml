@@ -41,7 +41,7 @@ jobs:
       - name: Upload build artifacts (JAR)
         uses: actions/upload-artifact@v4
         with:
-          name: app-jar
+          name: notenverwaltung
           path: |
             build/libs/*.jar
 
@@ -104,7 +104,7 @@ jobs:
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-jar
+          name: notenverwaltung
           path: build/libs
 
       - name: Normalize JAR filename and verify presence
@@ -150,7 +150,7 @@ jobs:
 
 
   latex:
-    name: Build and release documentation PDF
+    name: Build documentation PDF
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -175,15 +175,72 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-pdf
+          name: Dokumentation
           path: documentation/documentation.pdf
 
+  release:
+    name: Create GitHub Release with artifacts
+    needs: [build, latex]
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create GitHub Release (tags only)
+      - name: Determine version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: notenverwaltung
+          path: artifacts
+
+      - name: Download PDF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Dokumentation
+          path: artifacts
+
+      - name: Collect and rename release files
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          mkdir -p release
+          # Find JAR built by Gradle
+          shopt -s nullglob
+          JARS=(artifacts/*.jar artifacts/build/libs/*.jar artifacts/**/*.jar)
+          if [ ${#JARS[@]} -eq 0 ]; then
+            echo "No JAR found in artifacts" >&2
+            find artifacts -type f -print
+            exit 1
+          fi
+          cp "${JARS[0]}" "release/notenverwaltung-${VERSION}.jar"
+          # Find PDF
+          PDF_CANDIDATE="artifacts/documentation.pdf"
+          if [ ! -f "$PDF_CANDIDATE" ]; then
+            # sometimes nested
+            PDFS=(artifacts/*.pdf artifacts/**/documentation.pdf)
+            if [ ${#PDFS[@]} -eq 0 ]; then
+              echo "No PDF found in artifacts" >&2
+              find artifacts -type f -name "*.pdf" -print || true
+              exit 1
+            fi
+            PDF_CANDIDATE="${PDFS[0]}"
+          fi
+          cp "$PDF_CANDIDATE" "release/Dokumentation-${VERSION}.pdf"
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' && github.ref_type == 'tag'
         with:
           files: |
-            documentation/documentation.pdf
+            release/notenverwaltung-${{ steps.ver.outputs.version }}.jar
+            release/Dokumentation-${{ steps.ver.outputs.version }}.pdf
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
