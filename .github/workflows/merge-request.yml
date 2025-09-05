@@ -1,0 +1,36 @@
+name: Merge Request Build
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  pr-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+      - name: Build (no publish)
+        run: |
+          ./gradlew clean build -x test
+      - name: Run unit tests
+        run: |
+          ./gradlew test
+      - name: Upload build artifacts (JARs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-build-artifacts
+          path: build/libs/*.jar

@@ -1,0 +1,111 @@
+name: Version Tag and Build
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build-and-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Determine version from Gradle and compute patch
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Read major.minor from build.gradle.kts (version = "X.Y")
+          BASE_VERSION=$(grep -E '^version\s*=\s*"[0-9]+\.[0-9]+"' build.gradle.kts | sed -E 's/.*"([0-9]+\.[0-9]+)"/\1/')
+          if [ -z "$BASE_VERSION" ]; then
+            echo "Could not determine base version from build.gradle.kts" >&2
+            exit 1
+          fi
+          echo "Base version: $BASE_VERSION"
+
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          # Ensure we have all tags
+          git fetch --tags --force
+
+          # Find highest patch for tags like BASE_VERSION.Z without suffix
+          HIGHEST_PATCH=$(git tag --list "${BASE_VERSION}.*" | grep -E "^${BASE_VERSION}\\.[0-9]+$" | sed -E "s/^${BASE_VERSION}\.([0-9]+)/\1/" | sort -n | tail -n1)
+          if [ -z "$HIGHEST_PATCH" ]; then
+            HIGHEST_PATCH=-1
+          fi
+
+          NEXT_PATCH=$((HIGHEST_PATCH + 1))
+
+          if [ "$BRANCH_NAME" = "master" ] || [ "$BRANCH_NAME" = "main" ]; then
+            VERSION="${BASE_VERSION}.${NEXT_PATCH}"
+          else
+            VERSION="${BASE_VERSION}.${NEXT_PATCH}-${SHORT_SHA}"
+          fi
+
+          echo "Computed version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "base=$BASE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        if: always()
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Only create tag if it doesn't already exist
+          if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
+            echo "Tag ${VERSION} already exists. Skipping tag creation."
+          else
+            git tag -a "$VERSION" -m "Automated version tag $VERSION"
+            git push origin "$VERSION"
+          fi
+
+      - name: Build with Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+      
+      - name: Execute build
+        run: |
+          ./gradlew clean build -x test
+
+      - name: Locate built jars and prepare artifact name
+        id: jars
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p upload
+          # Copy all jars from build/libs
+          for f in build/libs/*.jar; do
+            # Rename to notenverwaltung-<version>.jar; if multiple, append classifier
+            base="notenverwaltung-${VERSION}"
+            if [[ "$f" =~ (-plain|-sources|-javadoc)\.jar$ ]]; then
+              classifier=$(echo "$f" | sed -E 's/.*(-plain|-sources|-javadoc)\.jar/\1/')
+              cp "$f" "upload/${base}${classifier}.jar"
+            else
+              cp "$f" "upload/${base}.jar"
+            fi
+          done
+          echo "dir=upload" >> $GITHUB_OUTPUT
+
+      - name: Upload jars artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-${{ steps.version.outputs.version }}
+          path: ${{ steps.jars.outputs.dir }}
