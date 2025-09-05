@@ -1,25 +1,36 @@
 \documentclass[12pt,a4paper]{article}
 
+% --- Encoding / fonts / language ---
+\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[ngerman]{babel}
+\usepackage{microtype}
+
+% --- Graphics / links / color ---
 \usepackage{graphicx}
-\usepackage{listings}
-\usepackage{listingsutf8}
-\usepackage{longtable}
-\usepackage{ltablex}
-\keepXColumns
-\usepackage{tabularx}
-\usepackage{array}
 \usepackage{hyperref}
 \usepackage{xurl}
 \usepackage{xcolor}
+
+% --- Tables ---
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{ltablex}
+\keepXColumns
+
+% --- Code / listings ---
+\usepackage{listings}
+\usepackage{listingsutf8}
+
+% --- Page geometry ---
 \usepackage{geometry}
 \geometry{a4paper, top=20mm, left=20mm, right=20mm, bottom=25mm}
 
-
+% --- Headers / footers ---
 \usepackage{fancyhdr}
-
 \setlength{\headheight}{15pt}
-
 \pagestyle{fancy}
 \lhead{Luca Güttinger}
 \rhead{\today}
@@ -27,6 +38,7 @@
 \cfoot{}
 \lfoot{\href{https://github.com/Luca-Guettinger/TODO}{Github/TODO}}
 
+% --- Listings config ---
 \lstset{
     inputencoding=utf8,
     language=SQL,
@@ -39,6 +51,9 @@
     tabsize=2,
     postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
 }
+
+% --- Helpers ---
+\newcommand{\code}[1]{\texttt{#1}}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
@@ -72,7 +87,7 @@
     In diesem Projekt wurde ein Notenverwaltungssystem für eine Hochschule entwickelt.
     Das Szenario beinhaltet die Verwaltung von Studierenden, Semestern, Fächern, Klassen, Tests sowie deren Noten.
     Die Anwendung besteht aus einer PostgreSQL-Datenbank und einem Spring Boot Service, welcher über eine REST-API zugänglich ist.
-    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \texttt{ADMIN}, \texttt{USER}).
+    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \code{ADMIN}, \code{USER}).
 
     \subsection{Ziel der Arbeit}
     Ziel war es, eine relationale Datenbank zu modellieren und mit SQL-Statements umzusetzen.
@@ -95,7 +110,7 @@
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
         \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
         \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System.
-        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. ADMIN, USER).
+        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. \code{ADMIN}, \code{USER}).
     \end{itemize}
 
     Die Beziehungen:
@@ -227,7 +242,6 @@
     \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id
     \newpage
 
-
 % ---------------- SQL-Implementierung ----------------
     \section{SQL-Implementierung}
 
@@ -298,7 +312,6 @@ Max Mustermann | 4.75 | Informatik Test 1
     \textbf{TODO: Screenshot aus DB-Client einfügen}
     \newpage
 
-
 % ---------------- Testprotokoll ----------------
     \section{Testprotokoll}
 
@@ -317,17 +330,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV (Docker, Postgres 16, SB 3.3) \\ \hline
-            Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit student\_number=S12345 \\ \hline
-            Endpoint/Schritte & POST /api/students mit Body \{first\_name, last\_name, email, student\_number\} \\ \hline
-            Response (gekürzt) & 201 Created; JSON mit id, first\_name, last\_name, email, student\_number \\ \hline
-            Post-Conditions & Student existiert in Tabelle students; Auditfelder gesetzt \\ \hline
+            Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit \code{student_number=S12345} \\ \hline
+            Endpoint/Schritte & \code{POST /api/students} mit Body \code{\{first_name, last_name, email, student_number\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; JSON mit \code{id, first_name, last_name, email, student_number} \\ \hline
+            Post-Conditions & Student existiert in Tabelle \code{students}; Auditfelder gesetzt \\ \hline
             Referenz & REQ-STU-001 \\ \hline
         \end{tabularx}
     \end{small}
 
-
     \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -337,15 +349,15 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Request ohne Pflichtfelder \\ \hline
-            Endpoint/Schritte & POST /api/students (ungültiger Body) \\ \hline
-            Response (gekürzt) & 400 Bad Request mit Validierungsfehlern \\ \hline
+            Endpoint/Schritte & \code{POST /api/students} (ungültiger Body) \\ \hline
+            Response (gekürzt) & \code{400 Bad Request} mit Validierungsfehlern \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
             Referenz & REQ-STU-002 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T3 - Semester hinzufügen}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -355,15 +367,15 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Keine \\ \hline
-            Endpoint/Schritte & INSERT/POST Semester $\rightarrow$ anschliessend GET /api/semesters \\ \hline
-            Response (gekürzt) & 201 Created; Objekt in GET-Liste vorhanden \\ \hline
+            Endpoint/Schritte & \code{INSERT}/\code{POST} Semester $\rightarrow$ anschliessend \code{GET /api/semesters} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Objekt in GET-Liste vorhanden \\ \hline
             Post-Conditions & Semester existiert \\ \hline
             Referenz & REQ-SEM-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T4 - Subject anlegen (Duplicate Name)}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -372,16 +384,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Subject mit Name=Mathematik existiert bereits \\ \hline
-            Endpoint/Schritte & POST /api/subjects mit Body {name:"Mathematik"} \\ \hline
-            Response (gekürzt) & 409 Conflict oder 400 Bad Request mit Fehlermeldung \\ \hline
+            Pre-Conditions & Subject mit \code{name=Mathematik} existiert bereits \\ \hline
+            Endpoint/Schritte & \code{POST /api/subjects} mit Body \code{\{name:"Mathematik"\}} \\ \hline
+            Response (gekürzt) & \code{409 Conflict} oder \code{400 Bad Request} mit Fehlermeldung \\ \hline
             Post-Conditions & Kein weiteres Subject mit gleichem Namen \\ \hline
             Referenz & REQ-SUB-002 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T5 - SemesterSubject Zuordnung}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -390,16 +402,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Semester HS2025 und Subject Mathematik existieren \\ \hline
-            Endpoint/Schritte & POST /api/semester-subjects mit {semesterId, subjectId} \\ \hline
-            Response (gekürzt) & 201 Created; Objekt enth\"alt IDs \\ \hline
-            Post-Conditions & Datensatz in semester_subjects existiert \\ \hline
+            Pre-Conditions & Semester \code{HS2025} und Subject \code{Mathematik} existieren \\ \hline
+            Endpoint/Schritte & \code{POST /api/semester-subjects} mit \code{\{semesterId, subjectId\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Objekt enth\"alt IDs \\ \hline
+            Post-Conditions & Datensatz in \code{semester_subjects} existiert \\ \hline
             Referenz & REQ-SS-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T6 - SemesterSubject doppelt}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -408,16 +420,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Zuordnung Semester HS2025 + Mathematik existiert \\ \hline
-            Endpoint/Schritte & Erneuter POST /api/semester-subjects mit derselben Kombination \\ \hline
-            Response (gekürzt) & 409 Conflict oder 400 mit Unique-Fehler \\ \hline
+            Pre-Conditions & Zuordnung Semester \code{HS2025} + \code{Mathematik} existiert \\ \hline
+            Endpoint/Schritte & Erneuter \code{POST /api/semester-subjects} mit derselben Kombination \\ \hline
+            Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehler \\ \hline
             Post-Conditions & Kein zweiter Datensatz angelegt \\ \hline
             Referenz & REQ-SS-002 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T7 - Klasse zu SemesterSubject}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -426,16 +438,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & semester_subjects-Datensatz vorhanden \\ \hline
-            Endpoint/Schritte & POST /api/classes mit {semesterSubjectId, name} \\ \hline
-            Response (gekürzt) & 201 Created; Klasse enth\"alt semesterSubjectId \\ \hline
-            Post-Conditions & Datensatz in classes existiert \\ \hline
+            Pre-Conditions & \code{semester_subjects}-Datensatz vorhanden \\ \hline
+            Endpoint/Schritte & \code{POST /api/classes} mit \code{\{semesterSubjectId, name\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Klasse enth\"alt \code{semesterSubjectId} \\ \hline
+            Post-Conditions & Datensatz in \code{classes} existiert \\ \hline
             Referenz & REQ-CLS-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T8 - Test an Klasse anlegen}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -445,33 +457,33 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Klasse existiert \\ \hline
-            Endpoint/Schritte & POST /api/tests mit {classId, semesterSubjectId, name, date} \\ \hline
-            Response (gekürzt) & 201 Created; Test enth\"alt classId, semesterSubjectId \\ \hline
-            Post-Conditions & Datensatz in tests existiert \\ \hline
+            Endpoint/Schritte & \code{POST /api/tests} mit \code{\{classId, semesterSubjectId, name, date\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Test enth\"alt \code{classId, semesterSubjectId} \\ \hline
+            Post-Conditions & Datensatz in \code{tests} existiert \\ \hline
             Referenz & REQ-TST-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T9 - Note für Student+Test}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T9 \\ \hline
-            Erwartet & Ein Datensatz in grades \\ \hline
+            Erwartet & Ein Datensatz in \code{grades} \\ \hline
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Test und Student existieren \\ \hline
-            Endpoint/Schritte & POST /api/grades mit {studentId, testId, value} \\ \hline
-            Response (gekürzt) & 201 Created; Grade enth\"alt studentId, testId, value \\ \hline
-            Post-Conditions & Datensatz in grades existiert \\ \hline
+            Endpoint/Schritte & \code{POST /api/grades} mit \code{\{studentId, testId, value\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{studentId, testId, value} \\ \hline
+            Post-Conditions & Datensatz in \code{grades} existiert \\ \hline
             Referenz & REQ-GRD-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T10 - Note doppelt gleicher Student+Test}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -480,34 +492,34 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Grade für (studentId,testId) existiert bereits \\ \hline
-            Endpoint/Schritte & Erneuter POST /api/grades mit gleichem studentId+testId \\ \hline
-            Response (gekürzt) & 409 Conflict oder 400 mit Unique-Fehlermeldung \\ \hline
+            Pre-Conditions & Grade für (\code{studentId}, \code{testId}) existiert bereits \\ \hline
+            Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{studentId+testId} \\ \hline
+            Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehlermeldung \\ \hline
             Post-Conditions & Kein zweiter Datensatz für gleiche Kombination \\ \hline
             Referenz & REQ-GRD-002 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T11 - JWT mit gültigem Token}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T11 \\ \hline
-            Erwartet & Zugriff erlaubt (HTTP 200) \\ \hline
+            Erwartet & Zugriff erlaubt (\code{HTTP 200}) \\ \hline
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Gültiger JWT-Token vorhanden \\ \hline
-            Endpoint/Schritte & GET /api/students mit Authorization: Bearer <token> \\ \hline
-            Response (gekürzt) & 200 OK; Liste der Studenten \\ \hline
+            Endpoint/Schritte & \code{GET /api/students} mit \code{Authorization: Bearer <token>} \\ \hline
+            Response (gekürzt) & \code{200 OK}; Liste der Studenten \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T12 - Zugriff ohne Token}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -516,16 +528,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Kein Authorization Header \\ \hline
-            Endpoint/Schritte & GET /api/students ohne Token \\ \hline
-            Response (gekürzt) & 401 Unauthorized \\ \hline
+            Pre-Conditions & Kein \code{Authorization} Header \\ \hline
+            Endpoint/Schritte & \code{GET /api/students} ohne Token \\ \hline
+            Response (gekürzt) & \code{401 Unauthorized} \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-002 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T13 - Rolle unzureichend}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -534,16 +546,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Benutzer mit ROLE_USER ohne Adminrechte \\ \hline
-            Endpoint/Schritte & POST /api/students mit ROLE_USER \\ \hline
-            Response (gekürzt) & 403 Forbidden \\ \hline
+            Pre-Conditions & Benutzer mit \code{ROLE_USER} ohne Adminrechte \\ \hline
+            Endpoint/Schritte & \code{POST /api/students} mit \code{ROLE_USER} \\ \hline
+            Response (gekürzt) & \code{403 Forbidden} \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
             Referenz & SEC-AUTH-003 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T14 - Paging/Filter Grades}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -552,16 +564,16 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Mehrere Grades im System \\ \hline
-            Endpoint/Schritte & GET /api/grades?page=0&size=10&valueMin=4.0 \\ \hline
-            Response (gekürzt) & 200 OK; Page mit erwarteter Anzahl und Filter \\ \hline
+            Pre-Conditions & Mehrere \code{grades} im System \\ \hline
+            Endpoint/Schritte & \code{GET /api/grades?page=0\&size=10\&valueMin=4.0} \\ \hline
+            Response (gekürzt) & \code{200 OK}; Page mit erwarteter Anzahl und Filter \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & REQ-GRD-003 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsubsection{T15 - Subject löschen mit Referenzen}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -570,13 +582,13 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Subject ist referenziert (semester_subjects/classes/tests) \\ \hline
-            Endpoint/Schritte & DELETE /api/subjects/{id} \\ \hline
-            Response (gekürzt) & 409 Conflict oder Fehlermeldung zur referenziellen Integrität \\ \hline
+            Pre-Conditions & Subject ist referenziert (\code{semester_subjects}/\code{classes}/\code{tests}) \\ \hline
+            Endpoint/Schritte & \code{DELETE /api/subjects/\{id\}} \\ \hline
+            Response (gekürzt) & \code{409 Conflict} oder Fehlermeldung zur referenziellen Integrität \\ \hline
             Post-Conditions & Subject bleibt bestehen; oder Cascade gemäss definierter Policy \\ \hline
             Referenz & REQ-SUB-003 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
 
     \subsection{Testdaten (Beispiel)}
     \begin{lstlisting}
@@ -600,7 +612,6 @@ INSERT INTO subjects (
   gen_random_uuid(),
   'Mathematik'
 );
-
     \end{lstlisting}
 
 % ---------------- Fazit ----------------
@@ -637,8 +648,8 @@ INSERT INTO subjects (
     \textbf{TODO: Vollständiger SQL-Dump aller Tabellen anhängen}
 
     \subsection{OpenAPI Dokumentation}
-    Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \texttt{doc.json}.
-    Swagger-UI ist unter \texttt{/api/public/docs} erreichbar.
+    Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \code{doc.json}.
+    Swagger-UI ist unter \code{/api/public/docs} erreichbar.
 
     \subsection{Screenshots}
     \textbf{TODO: Screenshots der REST-API und SQL-Abfragen einfügen}
