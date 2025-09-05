@@ -206,6 +206,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build PDF with latex-action
         uses: xu-cheng/latex-action@v3
@@ -243,14 +245,24 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           else
+            # For main/master branch pushes, prefer the latest semver tag created by release-version workflow
+            # Fallback to a date-based identifier for non-release branches
+            BRANCH=${GITHUB_REF_NAME}
+            if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+              LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
+              if [[ -n "$LAST" ]]; then
+                echo "version=${LAST}" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
             DATE=$(date +'%Y.%m.%d')
             echo "version=v${DATE}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           fi
       
 
-      - name: Create GitHub Release (if not exists)
+      - name: Create GitHub Release (tags only)
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Release ${{ steps.version.outputs.version }}
