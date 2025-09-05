@@ -65,6 +65,9 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
+          # Configure git identity for tagging
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           # Only create tag if it doesn't already exist
           if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
             echo "Tag ${VERSION} already exists. Skipping tag creation."
