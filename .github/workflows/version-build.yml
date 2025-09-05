@@ -1,6 +1,6 @@
 name: Build & Tag with Shared Version
 
-on: [push]
+on: [ push ]
 
 jobs:
   compute-version:
@@ -26,7 +26,14 @@ jobs:
             echo "Could not determine base version from build.gradle.kts" >&2
             exit 1
           fi
-          echo "Base version: $BASE_VERSION"
+
+          # If this workflow is triggered by pushing a tag, use that tag verbatim as VERSION
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "base=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           BRANCH_NAME="${GITHUB_REF_NAME}"
           SHORT_SHA=$(git rev-parse --short HEAD)
@@ -48,7 +55,6 @@ jobs:
             VERSION="${BASE_VERSION}.${NEXT_PATCH}-${SHORT_SHA}"
           fi
 
-          echo "Computed version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "base=$BASE_VERSION" >> "$GITHUB_OUTPUT"
 
@@ -79,7 +85,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
-            echo "Tag ${VERSION} already exists. Skipping tag creation."
+            : # Tag already exists; no action needed
           else
             git tag -a "$VERSION" -m "Automated version tag $VERSION"
             git push origin "$VERSION"
@@ -161,3 +167,66 @@ jobs:
         with:
           name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
           path: documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf
+
+  docker:
+    name: Build and push Docker image
+    needs: [build-and-tag, compute-version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download artifacts (all)
+        uses: actions/download-artifact@v4
+        with:
+          path: build/libs
+          merge-multiple: true
+
+      - name: Normalize JAR filename and verify presence
+        run: |
+          mkdir -p build/libs
+          shopt -s nullglob
+          JAR_CANDIDATES=(build/libs/*.jar build/libs/**/*.jar)
+          COUNT=${#JAR_CANDIDATES[@]}
+          if [ "$COUNT" -eq 0 ]; then
+            find build -maxdepth 3 -type f -name "*.jar" -print || true
+            exit 1
+          fi
+          SRC_JAR="${JAR_CANDIDATES[0]}"
+          cp "$SRC_JAR" build/libs/app.jar
+          cp build/libs/app.jar ./app.jar
+        shell: bash
+
+
+      - name: Set image tag (lowercase owner for GHCR)
+        id: img
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.img.outputs.name }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
