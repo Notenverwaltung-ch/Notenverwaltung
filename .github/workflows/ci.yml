@@ -99,7 +99,7 @@ jobs:
             fi
             echo "base=$BASE" >> $GITHUB_OUTPUT
             TAGS+="$REPO:${BASE}-beta-${SHORT_SHA}"
-          elif [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_REF_NAME" == feature/* ]]; then
+          elif [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_REF_NAME" == "feature"/* ]]; then
             SAFE_BRANCH=${GITHUB_REF_NAME//\//-}
             TAGS+="$REPO:${SAFE_BRANCH}-${SHORT_SHA}"
           elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
@@ -108,7 +108,9 @@ jobs:
             SAFE_REF=${GITHUB_REF_NAME//\//-}
             TAGS+="$REPO:${SAFE_REF}-${SHORT_SHA}"
           fi
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          # docker/build-push-action accepts newline or comma separated list
+          # Use newline to be safe
+          echo -e "tags<<EOF\n$TAGS\nEOF" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Set up Docker Buildx
@@ -169,7 +171,7 @@ jobs:
           echo "Repository: ghcr.io/${GITHUB_REPOSITORY}" >> docker-image-info.txt
           echo "" >> docker-image-info.txt
           echo "Available tags:" >> docker-image-info.txt
-          echo "${{ steps.dtags.outputs.tags }}" | tr ',' '\n' >> docker-image-info.txt
+          echo "${{ steps.dtags.outputs.tags }}" >> docker-image-info.txt
           echo "" >> docker-image-info.txt
           echo "Pull the image:" >> docker-image-info.txt
           echo "  docker pull ghcr.io/${GITHUB_REPOSITORY}:<tag>" >> docker-image-info.txt
