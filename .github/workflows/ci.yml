@@ -46,16 +46,39 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VER="$GITHUB_REF_NAME"
           else
-            # Read full semantic version from Gradle (e.g., 25.0.3)
-            FULL=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\(\.[0-9][0-9]*\)?\)"/\1/p' build.gradle.kts | head -n1)
-            if [[ -z "$FULL" ]]; then
-              FULL="0.0.0"
+            BRANCH="$GITHUB_REF_NAME"
+            # Extract base version X.Y from Gradle (supports version = "X.Y" or "X.Y.Z")
+            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)\(\.[0-9][0-9]*\)*"/\1/p' build.gradle.kts | head -n1)
+            if [[ -z "${BASE:-}" ]]; then
+              echo "Base version not found in build.gradle.kts" >&2
+              BASE="0.0"
             fi
-            SHORT_SHA=${GITHUB_SHA::7}
-            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$GITHUB_REF_NAME" == "master" || "$GITHUB_REF_NAME" == "main" ) ]]; then
-              VER="$FULL"
+            SHORTSHA=$(git rev-parse --short=8 HEAD)
+            # Get tags reachable from this branch (prefer ancestry correctness)
+            MERGED_TAGS=$(git tag --merged HEAD || true)
+            # Helper: find latest numeric tag for this base (X.Y.N)
+            find_latest_numeric() {
+              echo "$1" | grep -E "^${BASE}\\.[0-9]+$" | sort -V | tail -n1 || true
+            }
+            # Determine latest numeric base tag
+            LATEST_NUM=$(find_latest_numeric "$MERGED_TAGS")
+            if [[ -z "$LATEST_NUM" ]]; then
+              # Fallback: consider all tags in repo for this base
+              ALL_TAGS=$(git tag --list "${BASE}.*" || true)
+              LATEST_NUM=$(find_latest_numeric "$ALL_TAGS")
+            fi
+            if [[ -z "$LATEST_NUM" ]]; then
+              # If none exists at all, start from patch 0 (will become .1 on master)
+              LATEST_NUM="${BASE}.0"
+            fi
+            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$BRANCH" == "master" || "$BRANCH" == "main" ) ]]; then
+              # Master/Main: bump numeric patch and use X.Y.(N+1)
+              PATCH=${LATEST_NUM##*.}
+              NEXT_PATCH=$((10#$PATCH + 1))
+              VER="${BASE}.${NEXT_PATCH}"
             else
-              VER="${FULL}-${SHORT_SHA}"
+              # Other branches: use latest numeric and add -<sha8>
+              VER="${LATEST_NUM}-${SHORTSHA}"
             fi
           fi
           echo "version=$VER" >> "$GITHUB_OUTPUT"
@@ -223,16 +246,39 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VER="$GITHUB_REF_NAME"
           else
-            # Read full semantic version from Gradle (e.g., 25.0.3)
-            FULL=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\(\.[0-9][0-9]*\)?\)"/\1/p' build.gradle.kts | head -n1)
-            if [[ -z "$FULL" ]]; then
-              FULL="0.0.0"
+            BRANCH="$GITHUB_REF_NAME"
+            # Extract base version X.Y from Gradle (supports version = "X.Y" or "X.Y.Z")
+            BASE=$(sed -n 's/^version = "\([0-9][0-9]*\.[0-9][0-9]*\)\(\.[0-9][0-9]*\)*"/\1/p' build.gradle.kts | head -n1)
+            if [[ -z "${BASE:-}" ]]; then
+              echo "Base version not found in build.gradle.kts" >&2
+              BASE="0.0"
             fi
-            SHORT_SHA=${GITHUB_SHA::7}
-            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$GITHUB_REF_NAME" == "master" || "$GITHUB_REF_NAME" == "main" ) ]]; then
-              VER="$FULL"
+            SHORTSHA=$(git rev-parse --short=8 HEAD)
+            # Get tags reachable from this branch (prefer ancestry correctness)
+            MERGED_TAGS=$(git tag --merged HEAD || true)
+            # Helper: find latest numeric tag for this base (X.Y.N)
+            find_latest_numeric() {
+              echo "$1" | grep -E "^${BASE}\\.[0-9]+$" | sort -V | tail -n1 || true
+            }
+            # Determine latest numeric base tag
+            LATEST_NUM=$(find_latest_numeric "$MERGED_TAGS")
+            if [[ -z "$LATEST_NUM" ]]; then
+              # Fallback: consider all tags in repo for this base
+              ALL_TAGS=$(git tag --list "${BASE}.*" || true)
+              LATEST_NUM=$(find_latest_numeric "$ALL_TAGS")
+            fi
+            if [[ -z "$LATEST_NUM" ]]; then
+              # If none exists at all, start from patch 0 (will become .1 on master)
+              LATEST_NUM="${BASE}.0"
+            fi
+            if [[ "$GITHUB_REF_TYPE" == "branch" && ( "$BRANCH" == "master" || "$BRANCH" == "main" ) ]]; then
+              # Master/Main: bump numeric patch and use X.Y.(N+1)
+              PATCH=${LATEST_NUM##*.}
+              NEXT_PATCH=$((10#$PATCH + 1))
+              VER="${BASE}.${NEXT_PATCH}"
             else
-              VER="${FULL}-${SHORT_SHA}"
+              # Other branches: use latest numeric and add -<sha8>
+              VER="${LATEST_NUM}-${SHORTSHA}"
             fi
           fi
           echo "version=$VER" >> "$GITHUB_OUTPUT"
