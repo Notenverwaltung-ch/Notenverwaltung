@@ -27,6 +27,14 @@ jobs:
             exit 1
           fi
 
+          # If this workflow is triggered by pushing a tag, use that tag verbatim as VERSION
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "base=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           BRANCH_NAME="${GITHUB_REF_NAME}"
           SHORT_SHA=$(git rev-parse --short HEAD)
 
@@ -210,6 +218,6 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ghcr.io/${{ lower(github.repository) }}:${{ needs.compute-version.outputs.version }}
+          push: true
+          tags: notenverwaltung-ch/notenverwaltung:${{ needs.compute-version.outputs.version }}
 
