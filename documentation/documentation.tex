@@ -7,11 +7,6 @@
 \usepackage[ngerman]{babel}
 \usepackage{microtype}
 
-\usepackage{ragged2e}
-\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
-\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
-\renewcommand{\arraystretch}{1.15}
-
 % --- Graphics / links / color ---
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -20,6 +15,7 @@
 
 % --- Tables ---
 \usepackage{array}
+\usepackage{ragged2e}
 \usepackage{tabularx}
 \usepackage{longtable}
 \usepackage{ltablex}
@@ -58,7 +54,13 @@
 }
 
 % --- Helpers ---
-\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+% --- Column types for tables ---
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
