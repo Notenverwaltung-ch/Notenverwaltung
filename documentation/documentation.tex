@@ -3,6 +3,7 @@
 % --- Encoding / fonts / language ---
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\DeclareUnicodeCharacter{00A0}{~}
 \usepackage{lmodern}
 \usepackage[ngerman]{babel}
 \usepackage{microtype}
@@ -24,6 +25,7 @@
 % --- Code / listings ---
 \usepackage{listings}
 \usepackage{listingsutf8}
+\lstset{inputencoding=utf8/latin1}
 
 % --- Page geometry ---
 \usepackage{geometry}
@@ -601,8 +603,8 @@ Max Mustermann | 4.75 | Informatik Test 1
     \end{small}
 
     \subsection{Testdaten (Beispiel)}
-    \begin{lstlisting}
--- Minimaler Datensatz für End-to-End Tests
+    \begin{lstlisting}[language=SQL]
+-- Minimaler Datensatz fuer End-to-End Tests
 INSERT INTO semesters (
   id,
   name,
