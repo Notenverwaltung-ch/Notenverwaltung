@@ -16,7 +16,6 @@
 \geometry{a4paper, top=20mm, left=20mm, right=20mm, bottom=25mm}
 
 
-\usepackage{fancyheadings}
 \usepackage{fancyhdr}
 
 \setlength{\headheight}{15pt}
@@ -309,7 +308,7 @@ Max Mustermann | 4.75 | Informatik Test 1
     \subsection{Testfälle}\label{sec:testfaelle}
 
     \subsubsection{T1 - Student anlegen (gültige Daten)}
-    {\small
+    \begin{small}
         \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
@@ -319,12 +318,13 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV (Docker, Postgres 16, SB 3.3) \\ \hline
             Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit student\_number=S12345 \\ \hline
-            Endpoint/Schritte & POST /api/students mit Body {first\_name, last\_name, email, student\_number} \\ \hline
+            Endpoint/Schritte & POST /api/students mit Body \{first\_name, last\_name, email, student\_number\} \\ \hline
             Response (gekürzt) & 201 Created; JSON mit id, first\_name, last\_name, email, student\_number \\ \hline
             Post-Conditions & Student existiert in Tabelle students; Auditfelder gesetzt \\ \hline
             Referenz & REQ-STU-001 \\ \hline
         \end{tabularx}
-    }
+    \end{small}
+
 
     \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
     {\small
