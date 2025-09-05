@@ -79,7 +79,7 @@ jobs:
       - name: Upload build artifact (version-suffixed non-plain JAR)
         uses: actions/upload-artifact@v4
         with:
-          name: notenverwaltung
+          name: notenverwaltung-${{ steps.pav.outputs.version }}.jar
           path: build/libs/notenverwaltung-${{ steps.pav.outputs.version }}.jar
 
   docker:
@@ -138,10 +138,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download JAR artifact
+      - name: Download artifacts (all)
         uses: actions/download-artifact@v4
         with:
-          name: notenverwaltung
           path: build/libs
 
       - name: Normalize JAR filename and verify presence
@@ -241,7 +240,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Dokumentation
+          name: Dokumentation-${{ steps.pav.outputs.version }}.pdf
           path: documentation/Dokumentation-${{ steps.pav.outputs.version }}.pdf
 
   release:
@@ -261,17 +260,11 @@ jobs:
         id: ver
         run: echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Download JAR artifact
+      - name: Download artifacts (all)
         uses: actions/download-artifact@v4
         with:
-          name: notenverwaltung
           path: artifacts
 
-      - name: Download PDF artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: Dokumentation
-          path: artifacts
 
       - name: Collect and rename release files
         run: |
@@ -294,11 +287,9 @@ jobs:
           fi
           cp "${FILTERED_JARS[0]}" "release/notenverwaltung-${VERSION}.jar"
           # Find PDF
-          PDF_CANDIDATE="artifacts/documentation.pdf"
-          if [ ! -f "$PDF_CANDIDATE" ]; then
-            # sometimes nested
-            PDFS=(artifacts/*.pdf artifacts/**/documentation.pdf)
-            if [ ${#PDFS[@]} -eq 0 ]; then
+          # Find PDF (accept any pdf)
+          PDFS=(artifacts/*.pdf artifacts/**/*.pdf)
+          if [ ${#PDFS[@]} -eq 0 ]; then
               echo "No PDF found in artifacts" >&2
               find artifacts -type f -name "*.pdf" -print || true
               exit 1
