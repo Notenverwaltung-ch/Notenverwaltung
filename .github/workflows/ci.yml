@@ -171,14 +171,31 @@ jobs:
           working_directory: documentation
           latexmk_use_lualatex: false
           latexmk_use_xelatex: false
-          extra_system_packages: ghostscript
-          args: -pdf -interaction=nonstopmode -halt-on-error
+          # strong diagnostics:
+          args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
+          # install any TeX pkgs you need before compiling:
+          pre_compile: |
+            tlmgr update --self
+            tlmgr install \
+              ltablex tabularx ragged2e microtype babel-german xurl \
+              listings listingsutf8 fancyhdr geometry hyperref xcolor lm
 
       - name: Upload PDF artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: documentation-pdf
           path: documentation/documentation.pdf
+
+      - name: Upload LaTeX logs (for debugging)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latex-logs
+          path: |
+            documentation/*.log
+            documentation/*.aux
+            documentation/*.toc
 
       - name: Determine version
         id: version
@@ -186,10 +203,10 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           else
-            # If no version, create one based on date and short sha
             DATE=$(date +'%Y.%m.%d')
             echo "version=v${DATE}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           fi
+      
 
       - name: Create GitHub Release (if not exists)
         uses: softprops/action-gh-release@v2

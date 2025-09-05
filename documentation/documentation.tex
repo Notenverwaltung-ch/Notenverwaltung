@@ -7,6 +7,11 @@
 \usepackage[ngerman]{babel}
 \usepackage{microtype}
 
+\usepackage{ragged2e}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\renewcommand{\arraystretch}{1.15}
+
 % --- Graphics / links / color ---
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -36,7 +41,7 @@
 \rhead{\today}
 \rfoot{Seite \thepage}
 \cfoot{}
-\lfoot{\href{https://github.com/Luca-Guettinger/TODO}{Github/TODO}}
+\lfoot{\footnotesize\mbox{\url{https://github.com/Luca-Guettinger/TODO}}}
 
 % --- Listings config ---
 \lstset{
@@ -62,7 +67,7 @@
 \setcounter{secnumdepth}{4}
 
 \begin{document}
-
+    \hypersetup{pageanchor=false}
 % ---------------- Titelseite ----------------
     \begin{titlepage}
         \centering
@@ -77,6 +82,9 @@
         {\Large Abgabedatum: 07.09.2025 \par}
         \vfill
     \end{titlepage}
+    \clearpage
+    \hypersetup{pageanchor=true}
+    \pagenumbering{arabic}
 
 % ---------------- Inhaltsverzeichnis ----------------
     \tableofcontents
@@ -134,7 +142,7 @@
     Im Folgenden werden die Tabellen detailliert beschrieben. Für jede Entität gibt es eine separate Tabelle mit Attributen, Datentypen, Pflichten und Schlüsseln.
 
     \subsubsection{students}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -150,7 +158,7 @@
     \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{semesters}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -161,7 +169,7 @@
     \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{subjects}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -170,7 +178,7 @@
     \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{semester\_subjects}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -180,7 +188,7 @@
     \textbf{Schlüssel / Constraints:} PK: id; Unique(semester\_id, subject\_id) empfohlen
 
     \subsubsection{classes}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -190,7 +198,7 @@
     \textbf{Schlüssel / Constraints:} PK: id; FK: semester\_subject\_id
 
     \subsubsection{tests}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -203,7 +211,7 @@
     \textbf{Schlüssel / Constraints:} PK: id; FK: class\_id; FK: semester\_subject\_id
 
     \subsubsection{grades}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -216,7 +224,7 @@
     \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
 
     \subsubsection{users}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
@@ -233,7 +241,7 @@
     \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{user\_roles}
-    \begin{longtable}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
         \hline
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         user\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
@@ -322,7 +330,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T1 - Student anlegen (gültige Daten)}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T1 \\ \hline
@@ -340,7 +348,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T2 \\ \hline
@@ -358,7 +366,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T3 - Semester hinzufügen}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T3 \\ \hline
@@ -376,7 +384,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T4 - Subject anlegen (Duplicate Name)}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T4 \\ \hline
@@ -394,7 +402,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T5 - SemesterSubject Zuordnung}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T5 \\ \hline
@@ -412,7 +420,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T6 - SemesterSubject doppelt}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T6 \\ \hline
@@ -430,7 +438,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T7 - Klasse zu SemesterSubject}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T7 \\ \hline
@@ -448,7 +456,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T8 - Test an Klasse anlegen}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T8 \\ \hline
@@ -466,7 +474,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T9 - Note für Student+Test}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T9 \\ \hline
@@ -484,7 +492,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T10 - Note doppelt gleicher Student+Test}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T10 \\ \hline
@@ -502,7 +510,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T11 - JWT mit gültigem Token}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T11 \\ \hline
@@ -520,7 +528,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T12 - Zugriff ohne Token}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T12 \\ \hline
@@ -538,7 +546,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T13 - Rolle unzureichend}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T13 \\ \hline
@@ -556,7 +564,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T14 - Paging/Filter Grades}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T14 \\ \hline
@@ -574,7 +582,7 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsubsection{T15 - Subject löschen mit Referenzen}
     \begin{small}
-        \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+        \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T15 \\ \hline
