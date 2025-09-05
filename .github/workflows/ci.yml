@@ -173,6 +173,9 @@ jobs:
           latexmk_use_xelatex: false
           extra_system_packages: ghostscript
           args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
+          pre_compile: |
+            tlmgr update --self || true
+            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german || true
 
       - name: Upload PDF artifact
         if: always()
