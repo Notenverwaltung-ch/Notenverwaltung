@@ -192,9 +192,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download artifacts (all)
+      - name: Download jar artifacts only
         uses: actions/download-artifact@v4
         with:
+          pattern: notenverwaltung-*
           path: build/libs
           merge-multiple: true
 
@@ -242,9 +243,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Download artifacts (all)
+      - name: Download release artifacts (PDFs and JARs)
         uses: actions/download-artifact@v4
         with:
+          pattern: |
+            notenverwaltung-${{ needs.compute-version.outputs.version }}
+            notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
           path: artifacts
           merge-multiple: true
 
