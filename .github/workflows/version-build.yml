@@ -258,8 +258,7 @@ jobs:
           tag_name: ${{ needs.compute-version.outputs.version }}
           name: ${{ needs.compute-version.outputs.version }}
           files: |
-            artifacts/**/*.jar
-            artifacts/**/*.pdf
+            artifacts/**
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
