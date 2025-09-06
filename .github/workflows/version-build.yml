@@ -110,7 +110,7 @@ jobs:
           shopt -s nullglob
           mkdir -p upload
           for f in build/libs/*.jar; do
-            base="notenverwaltung-${VERSION}"
+            base="notenverwaltung-jars-${VERSION}"
             if [[ "$f" =~ (-plain|-sources|-javadoc)\.jar$ ]]; then
               classifier=$(echo "$f" | sed -E 's/.*(-plain|-sources|-javadoc)\.jar/\1/')
               cp "$f" "upload/${base}${classifier}.jar"
@@ -123,7 +123,7 @@ jobs:
       - name: Upload jars artifact
         uses: actions/upload-artifact@v4
         with:
-          name: notenverwaltung-${{ needs.compute-version.outputs.version }}
+          name: notenverwaltung-jars-${{ needs.compute-version.outputs.version }}
           path: ${{ steps.jars.outputs.dir }}
 
   latex:
@@ -195,7 +195,7 @@ jobs:
       - name: Download jar artifacts only
         uses: actions/download-artifact@v4
         with:
-          pattern: notenverwaltung-*
+          pattern: notenverwaltung-jars*
           path: build/libs
           merge-multiple: true
 
@@ -247,8 +247,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: |
-            notenverwaltung-${{ needs.compute-version.outputs.version }}
-            notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
+            notenverwaltung-jars-*
+            notenverwaltung-documentation-*
           path: artifacts
           merge-multiple: true
 
