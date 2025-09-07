@@ -36,6 +36,9 @@ public class SubjectService {
 
     @Transactional
     public SubjectDTO create(SubjectDTO dto) {
+        if (subjectRepository.existsByName(dto.getName())) {
+            throw new ch.notenverwaltung.exception.AlreadyExistsException("Subject with name '" + dto.getName() + "' already exists");
+        }
         Subject entity = Subject.builder().name(dto.getName()).build();
         return toDTO(subjectRepository.save(entity));
     }
@@ -53,7 +56,12 @@ public class SubjectService {
         if (!subjectRepository.existsById(id)) {
             throw new EntityNotFoundException("Subject not found with id: " + id);
         }
-        subjectRepository.deleteById(id);
+        try {
+            subjectRepository.deleteById(id);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Re-throw to be handled by ApiExceptionHandler as 409 Conflict
+            throw ex;
+        }
     }
 
     private SubjectDTO toDTO(Subject subject) {

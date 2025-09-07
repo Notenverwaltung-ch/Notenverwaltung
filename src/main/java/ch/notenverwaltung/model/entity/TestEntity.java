@@ -3,6 +3,7 @@ package ch.notenverwaltung.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,12 @@ public class TestEntity {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(name = "comment", nullable = true, length = 1000)
+    private String comment;
+
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "semester_subject_id", nullable = false)

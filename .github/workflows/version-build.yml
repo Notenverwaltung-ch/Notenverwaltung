@@ -147,7 +147,7 @@ jobs:
           args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
           pre_compile: |
             tlmgr update --self || true
-            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array || true
+            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array pdflscape tikz || true
       - name: Prepare version-suffixed PDF
         if: always()
         shell: bash
@@ -247,8 +247,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: |
-            notenverwaltung-jars-*
-            notenverwaltung-documentation-*
+            notenverwaltung-*
           path: artifacts
           merge-multiple: true
 
