@@ -234,7 +234,6 @@ jobs:
   release:
     name: Create GitHub Release with artifacts
     needs: [build-and-tag, compute-version, latex]
-    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -247,7 +246,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: |
-            notenverwaltung-jars-*
             notenverwaltung-documentation-*
           path: artifacts
           merge-multiple: true
