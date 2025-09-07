@@ -13,6 +13,7 @@ public class GradeDTO {
     private UUID id;
     private BigDecimal value;
     private BigDecimal weight;
+    private String comment;
     private UUID studentId;
     private UUID testId;
 }

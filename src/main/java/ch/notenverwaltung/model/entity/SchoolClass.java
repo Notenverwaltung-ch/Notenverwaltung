@@ -22,6 +22,9 @@ public class SchoolClass {
     @JoinColumn(name = "semester_subject_id", nullable = false)
     private SemesterSubject semesterSubject;
 
+    @Column(name = "name", nullable = true, length = 100)
+    private String name;
+
     @OneToMany(mappedBy = "schoolClass", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TestEntity> tests = new ArrayList<>();

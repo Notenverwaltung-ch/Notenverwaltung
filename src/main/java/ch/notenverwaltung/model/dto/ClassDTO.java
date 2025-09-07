@@ -11,4 +11,5 @@ import java.util.UUID;
 public class ClassDTO {
     private UUID id;
     private UUID semesterSubjectId;
+    private String name;
 }

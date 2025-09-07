@@ -98,3 +98,13 @@ DELETE http://localhost:8080/api/tests/{{testId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
+
+### grades: semester aggregation (admin)
+GET http://localhost:8080/api/grades/semester?semesterId={{semesterId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### grades: semester aggregation for one student (admin)
+GET http://localhost:8080/api/grades/semester?semesterId={{semesterId}}&studentId={{studentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json

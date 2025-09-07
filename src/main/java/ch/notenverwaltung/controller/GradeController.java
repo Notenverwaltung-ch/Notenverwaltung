@@ -112,10 +112,50 @@ public class GradeController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "List grades for a specific user",
+            description = "Admins can fetch grades for any user. Regular users can only fetch their own grades.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Page of grades returned",
+                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = GradeDTO.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden for non-owners")
+            }
+    )
+    public ResponseEntity<Page<GradeDTO>> getGradesForUser(
+            @PathVariable UUID userId,
+            Pageable pageable,
+            Authentication auth
+    ) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            UUID currentUserId = getUserIdFromPrincipal(auth);
+            if (!currentUserId.equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+        Page<GradeDTO> page = gradeService.find(pageable, userId, null, null, null, true, auth.getName());
+        return ResponseEntity.ok(page);
+    }
+
     private UUID getUserIdFromPrincipal(Authentication auth) {
         String username = auth.getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found: " + username))
                 .getId();
+    }
+
+    @GetMapping("/semester")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Get grades for a semester (optionally for one student)",
+            description = "Returns, for the given semester, for each student (or a specific student if studentId is provided): all individual grades per subject, the calculated weighted grade per subject, and the overall weighted average.")
+    public ResponseEntity<java.util.List<ch.notenverwaltung.model.dto.StudentSemesterResultDTO>> getSemesterGrades(
+            @RequestParam("semesterId") UUID semesterId,
+            @RequestParam(value = "studentId", required = false) UUID studentId
+    ) {
+        java.util.List<ch.notenverwaltung.model.dto.StudentSemesterResultDTO> data = gradeService.getSemesterGrades(semesterId, studentId);
+        return ResponseEntity.ok(data);
     }
 }

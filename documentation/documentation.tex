@@ -150,10 +150,8 @@
         \item Registrierung und Anmeldung von Nutzerinnen und Nutzern (STUDENT, optional TEACHER/ADMIN).
         \item Selbstständige Verwaltung persönlicher Noten durch STUDENTs: Anlegen, Bearbeiten, Löschen von Tests/Noten im eigenen Bereich.
         \item Einsicht in Notenverläufe, Berechnung von Durchschnittswerten und einfachen Auswertungen pro Fach/Semester.
-        \item Optionale Verwaltungsfunktionen für TEACHER/ADMIN: Fächer, Klassen, Tests und Semester anlegen und zuordnen.
         \item Rollenbasierter Zugriff auf REST-API-Endpunkte mit klar definierten Berechtigungen.
         \item Export einfacher Auswertungen (z. B. CSV/JSON) über die API (optional).
-        \item Änderungsnachvollziehbarkeit für sensible Aktionen (z. B. wer hat welche Note wann geändert), soweit vorgesehen.
         \item Fehlermeldungen und Validierungen (z. B. Pflichtfelder, Wertebereiche, Dublettenprüfung bei eindeutigen Attributen).
     \end{itemize}
 
@@ -179,7 +177,7 @@
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
         \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
         \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
-        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (\code{USER}, \code{ADMIN}).
+        \item \textbf{Rolle (UserRole-Elementsammlung)}: Rollen werden als Element-Collection in \code{user_roles} ohne eigene \code{roles}-Tabelle gespeichert (\code{USER}, \code{ADMIN}).
     \end{itemize}
 
     Die Beziehungen:
@@ -220,11 +218,10 @@
                     \node[entity, right=2.8cm of Semester] (Subject) {\textbf{subjects}\\\footnotesize id: uuid (PK)\\ name: varchar(150)};
                     \node[entity, below=2.0cm of $(Semester)!0.5!(Subject)$] (SemSub) {\textbf{semester\_subjects}\\\footnotesize id: uuid (PK)\\ semester\_id: uuid (FK)\\ subject\_id: uuid (FK)};
                     \node[entity, below=2.0cm of SemSub] (Class) {\textbf{classes}\\\footnotesize id: uuid (PK)\\ semester\_subject\_id: uuid (FK)\\ name: varchar(100)};
-                    \node[entity, right=3.0cm of Class] (Test) {\textbf{tests}\\\footnotesize id: uuid (PK)\\ name: varchar(150)\\ class\_id: uuid (FK)\\ semester\_subject\_id: uuid (FK)\\ max\_points: numeric(10,2)\\ date: date};
-                    \node[entity, right=3.0cm of Test] (Grade) {\textbf{grades}\\\footnotesize id: uuid (PK)\\ value: numeric(4,2)\\ weight: numeric(4,2)\\ user\_id: uuid (FK)\\ test\_id: uuid (FK)\\ comment: varchar(255)};
+                    \node[entity, right=3.0cm of Class] (Test) {\textbf{tests}\\\footnotesize id: uuid (PK)\\ name: varchar(150)\\ class\_id: uuid (FK)\\ semester\_subject\_id: uuid (FK)\\ date: date (NOT NULL)\\ comment: varchar(1000)};
+                    \node[entity, right=3.0cm of Test] (Grade) {\textbf{grades}\\\footnotesize id: uuid (PK)\\ value: numeric(4,2) (NOT NULL)\\ weight: numeric(4,2) (NOT NULL)\\ student\_id: uuid (FK, NOT NULL)\\ test_id: uuid (FK, NULL)\\ comment: varchar(255)};
                     \node[entity, above=1.8cm of Grade] (User) {\textbf{users}\\\footnotesize id: uuid (PK)\\ username: varchar(100)\\ password: varchar(255)\\ email: varchar(255)\\ first\_name: varchar(100)\\ last\_name: varchar(100)\\ active: boolean\\ created\_at: timestamp};
-                    \node[entity, right=2.8cm of User] (Role) {\textbf{roles}\\\footnotesize id: uuid (PK)\\ name: varchar(50)};
-                    \node[entity, below=1.8cm of Role] (UserRole) {\textbf{user\_roles}\\\footnotesize user\_id: uuid (FK)\\ role\_id: uuid (FK)};
+                    \node[entity, right=2.8cm of User] (UserRole) {\textbf{user\_roles}\\\footnotesize user\_id: uuid (FK)\\ role: varchar(50) (PK-part)};
 
                     % Relationships
                     \draw[rel] (Semester) -- node[above, note]{1..*} (SemSub);
@@ -234,7 +231,6 @@
                     \draw[rel] (Test) -- node[above, note]{1..*} (Grade);
                     \draw[rel] (User) -- node[right, note]{1..*} (Grade);
                     \draw[rel] (User) -- node[above, note]{1..*} (UserRole);
-                    \draw[rel] (UserRole) -- node[above, note]{*..1} (Role);
                 \end{tikzpicture}
             }
             \caption{ER-Diagramm des Notenverwaltungssystems}
@@ -294,8 +290,8 @@
         name & varchar(150) & ja &  \\ \hline
         class\_id & uuid & ja & FK $\rightarrow$ classes(id) \\ \hline
         semester\_subject\_id & uuid & ja & FK $\rightarrow$ semester\_subjects(id) \\ \hline
-        max\_points & numeric(10,2) & nein &  \\ \hline
-        date & date & nein &  \\ \hline
+        date & date & ja & Datum des Tests (liegt im Idealfall im Semesterzeitraum) \\ \hline
+        comment & varchar(1000) & nein & Freitext, optionaler Kommentar zum Test \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; FK: class\_id; FK: semester\_subject\_id
 
@@ -305,12 +301,12 @@
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
         value & numeric(4,2) & ja & Notenwert (z. B. 1.0-6.0) \\ \hline
-        weight & numeric(4,2) & nein & Gewichtung in Prozent \\ \hline
-        user\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
-        test\_id & uuid & ja & FK $\rightarrow$ tests(id) \\ \hline
+        weight & numeric(4,2) & ja & Gewichtung in Prozent \\ \hline
+        student\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
+        test\_id & uuid & nein & FK $\rightarrow$ tests(id) \\ \hline
         comment & varchar(255) & nein & Freitext \\ \hline
     \end{longtable}
-    \textbf{Schlüssel / Constraints:} PK: id; FK: user\_id; FK: test\_id; Unique(user\_id, test\_id) empfohlen
+    \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
 
     \subsubsection{users}
     \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
@@ -350,10 +346,11 @@
     \subsection{Architektur \/ Spring Boot Service}
     Die Anwendung ist als monolithischer Spring Boot Service aufgebaut und folgt einer klaren Schichtentrennung:
     \begin{itemize}
-        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects}, \code{/api/semesters}, \code{/api/classes}, \code{/api/tests}, \code{/api/admin/users})
+        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects}, \newline
+        \item \code{/api/semesters}, \code{/api/classes}, \code{/api/tests}, \code{/api/admin/users})
         \item \textbf{Service-Schicht}: Kapselt Geschäftslogik, Transaktionen und Validierungen; orchestriert Zugriffe auf Repositories.
         \item \textbf{Repository-Schicht}: Spring Data JPA Repositories für CRUD-Operationen und abgeleitete/annotierte Queries.
-        \item \textbf{Domain\/Model}: JPA-Entities (z. B. \code{Semester}, \code{Subject}, \code{Class}, \code{Test}, \code{Grade}, \code{User}, \code{Role}).
+        \item \textbf{Domain\/Model}: JPA-Entities (z. B. \code{Semester}, \code{Subject}, \code{Class}, \code{Test}, \code{Grade}, \code{User}) sowie eine Element-Collection \code{user_roles} für Rollen (keine separate \code{roles}-Tabelle).
     \end{itemize}
     Der Service ist containerisierbar (Docker) und wird in der lokalen Entwicklung via \code{docker-compose} mit PostgreSQL betrieben.
 
@@ -463,8 +460,8 @@ JOIN semesters sem ON sem.name = 'HS2025'
 JOIN semester_subjects ss ON ss.subject_id = sub.id AND ss.semester_id = sem.id;
 
 -- Tests: legt je einen Test pro Klasse an (z. B. erste Prüfung)
-INSERT INTO tests (id, name, class_id, semester_subject_id, max_points, date)
-SELECT gen_random_uuid(), CONCAT(sub.name, ' Test 1'), c.id, ss.id, 100.00, '2025-10-15'
+INSERT INTO tests (id, name, class_id, semester_subject_id, date)
+SELECT gen_random_uuid(), CONCAT(sub.name, ' Test 1'), c.id, ss.id, '2025-10-15'
 FROM classes c
 JOIN semester_subjects ss ON ss.id = c.semester_subject_id
 JOIN subjects sub ON sub.id = ss.subject_id;
@@ -541,7 +538,7 @@ JOIN semester_subjects ss ON ss.id = c.semester_subject_id
 JOIN semesters sem ON sem.id = ss.semester_id
 JOIN subjects sub ON sub.id = ss.subject_id
 LEFT JOIN grades g ON g.test_id = t.id
-WHERE sem.name = 'HS2025'
+WHERE sem.name = 'SEM-1-2025'
 GROUP BY sem.name, sub.name, t.name, t.date
 ORDER BY sub.name, t.date;
 
@@ -575,17 +572,15 @@ LEFT JOIN grades g ON g.test_id = t.id AND g.user_id = u.id
 WHERE g.id IS NULL
 ORDER BY u.username, sub.name, t.date;
 
--- 6) Rangliste pro Test (beste zuerst) inkl. Prozent der Maximalpunkte
+-- 6) Rangliste pro Test (beste zuerst)
 SELECT t.name AS test_name,
        u.username,
-       g.value AS grade,
-       t.max_points,
-       ROUND((g.value / NULLIF(t.max_points,0)) * 100, 2) AS pct_of_max
+       g.value AS grade
 FROM grades g
 JOIN tests t ON t.id = g.test_id
 JOIN users u ON u.id = g.user_id
 WHERE t.name LIKE '%Test 1%'
-ORDER BY t.name, pct_of_max DESC NULLS LAST;
+ORDER BY t.name, g.value DESC NULLS LAST;
 
 -- 7) Workload je Fach im Semester: Anzahl Klassen, Tests, Bewertungen
 WITH test_counts AS (

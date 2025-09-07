@@ -1,6 +1,10 @@
 package ch.notenverwaltung.service;
 
 import ch.notenverwaltung.model.dto.GradeDTO;
+import ch.notenverwaltung.model.dto.GradeItemDTO;
+import ch.notenverwaltung.model.dto.SemesterGradeRow;
+import ch.notenverwaltung.model.dto.StudentSemesterResultDTO;
+import ch.notenverwaltung.model.dto.SubjectResultDTO;
 import ch.notenverwaltung.model.entity.Grade;
 import ch.notenverwaltung.model.entity.User;
 import ch.notenverwaltung.model.entity.TestEntity;
@@ -12,8 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,12 +54,90 @@ public class GradeService {
             page = gradeRepository.findAll(pageable);
         }
         java.util.List<GradeDTO> content = page.getContent().stream()
-                .filter(g -> testId == null || g.getTest().getId().equals(testId))
+                .filter(g -> testId == null || (g.getTest() != null && g.getTest().getId().equals(testId)))
                 .filter(g -> valueMin == null || g.getValue().compareTo(valueMin) >= 0)
                 .filter(g -> valueMax == null || g.getValue().compareTo(valueMax) <= 0)
                 .map(this::toDTO)
                 .collect(java.util.stream.Collectors.toList());
         return new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentSemesterResultDTO> getSemesterGrades(UUID semesterId, UUID studentId) {
+        List<SemesterGradeRow> rows = gradeRepository.findSemesterGrades(semesterId, studentId);
+        // Group by student
+        Map<UUID, List<SemesterGradeRow>> byStudent = rows.stream()
+                .collect(Collectors.groupingBy(SemesterGradeRow::getStudentId, LinkedHashMap::new, Collectors.toList()));
+
+        List<StudentSemesterResultDTO> result = new ArrayList<>();
+        for (Map.Entry<UUID, List<SemesterGradeRow>> studentEntry : byStudent.entrySet()) {
+            UUID sId = studentEntry.getKey();
+            List<SemesterGradeRow> sRows = studentEntry.getValue();
+            String firstName = sRows.stream().map(SemesterGradeRow::getStudentFirstName).filter(Objects::nonNull).findFirst().orElse(null);
+            String lastName = sRows.stream().map(SemesterGradeRow::getStudentLastName).filter(Objects::nonNull).findFirst().orElse(null);
+
+            // Group by subject
+            Map<UUID, List<SemesterGradeRow>> bySubject = sRows.stream()
+                    .collect(Collectors.groupingBy(SemesterGradeRow::getSubjectId, LinkedHashMap::new, Collectors.toList()));
+
+            List<SubjectResultDTO> subjects = new ArrayList<>();
+            BigDecimal totalWeightedSum = BigDecimal.ZERO;
+            BigDecimal totalWeight = BigDecimal.ZERO;
+
+            for (Map.Entry<UUID, List<SemesterGradeRow>> subjEntry : bySubject.entrySet()) {
+                UUID subjId = subjEntry.getKey();
+                List<SemesterGradeRow> subjRows = subjEntry.getValue();
+                String subjectName = subjRows.stream().map(SemesterGradeRow::getSubjectName).filter(Objects::nonNull).findFirst().orElse(null);
+
+                List<GradeItemDTO> gradeItems = subjRows.stream().map(r ->
+                        GradeItemDTO.builder()
+                                .gradeId(r.getGradeId())
+                                .testId(r.getTestId())
+                                .testName(r.getTestName())
+                                .testDate(r.getTestDate())
+                                .value(r.getValue())
+                                .weight(r.getWeight())
+                                .gradeComment(r.getGradeComment())
+                                .build()
+                ).collect(Collectors.toList());
+
+                BigDecimal subjectWeightedSum = subjRows.stream()
+                        .map(r -> safe(r.getValue()).multiply(safe(r.getWeight())))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal subjectWeight = subjRows.stream()
+                        .map(r -> safe(r.getWeight()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal subjectAvg = subjectWeight.compareTo(BigDecimal.ZERO) == 0 ? null : subjectWeightedSum.divide(subjectWeight, 2, RoundingMode.HALF_UP);
+
+                if (subjectWeight.compareTo(BigDecimal.ZERO) > 0) {
+                    totalWeightedSum = totalWeightedSum.add(subjectWeightedSum);
+                    totalWeight = totalWeight.add(subjectWeight);
+                }
+
+                subjects.add(SubjectResultDTO.builder()
+                        .subjectId(subjId)
+                        .subjectName(subjectName)
+                        .calculatedGrade(subjectAvg)
+                        .grades(gradeItems)
+                        .build());
+            }
+
+            BigDecimal overall = totalWeight.compareTo(BigDecimal.ZERO) == 0 ? null : totalWeightedSum.divide(totalWeight, 2, RoundingMode.HALF_UP);
+
+            StudentSemesterResultDTO dto = StudentSemesterResultDTO.builder()
+                    .studentId(sId)
+                    .studentFirstName(firstName)
+                    .studentLastName(lastName)
+                    .overallGrade(overall)
+                    .subjects(subjects)
+                    .build();
+            result.add(dto);
+        }
+        return result;
+    }
+
+    private BigDecimal safe(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 
     @Transactional(readOnly = true)
@@ -67,11 +150,15 @@ public class GradeService {
     public GradeDTO create(GradeDTO dto) {
         User student = userRepository.findById(dto.getStudentId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + dto.getStudentId()));
-        TestEntity test = testRepository.findById(dto.getTestId())
-                .orElseThrow(() -> new EntityNotFoundException("Test not found with id: " + dto.getTestId()));
+        TestEntity test = null;
+        if (dto.getTestId() != null) {
+            test = testRepository.findById(dto.getTestId())
+                    .orElseThrow(() -> new EntityNotFoundException("Test not found with id: " + dto.getTestId()));
+        }
         Grade entity = Grade.builder()
                 .value(dto.getValue())
                 .weight(dto.getWeight())
+                .comment(dto.getComment())
                 .student(student)
                 .test(test)
                 .build();
@@ -84,6 +171,7 @@ public class GradeService {
                 .orElseThrow(() -> new EntityNotFoundException("Grade not found with id: " + id));
         entity.setValue(dto.getValue());
         entity.setWeight(dto.getWeight());
+        entity.setComment(dto.getComment());
         if (dto.getStudentId() != null) {
             entity.setStudent(userRepository.findById(dto.getStudentId())
                     .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + dto.getStudentId())));
@@ -108,8 +196,9 @@ public class GradeService {
                 .id(g.getId())
                 .value(g.getValue())
                 .weight(g.getWeight())
+                .comment(g.getComment())
                 .studentId(g.getStudent().getId())
-                .testId(g.getTest().getId())
+                .testId(g.getTest() != null ? g.getTest().getId() : null)
                 .build();
     }
 }
