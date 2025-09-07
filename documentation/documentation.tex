@@ -14,6 +14,9 @@
 \usepackage{xurl}
 \usepackage{xcolor}
 
+\graphicspath{{diagrams/}}
+\usepackage{float}
+
 % --- Tables ---
 \usepackage{array}
 \usepackage{ragged2e}
@@ -39,7 +42,7 @@
 \rhead{\today}
 \rfoot{Seite \thepage}
 \cfoot{}
-\lfoot{\footnotesize\mbox{\url{https://github.com/Luca-Guettinger/TODO}}}
+\lfoot{\footnotesize\mbox{\url{https://github.com/Notenverwaltung-ch/Notenverwaltung}}}
 
 % --- Listings config ---
 \lstset{
@@ -75,12 +78,15 @@
 % ---------------- Titelseite ----------------
     \begin{titlepage}
         \centering
-        {\huge\bfseries Notenverwaltungssystem für eine Hochschule \par}
+        {\huge\bfseries Notenverwaltungssystem \par}
         \vspace{2cm}
         {\Large Luca Güttinger \par}
         \vspace{0.5cm}
-        {\Large Datenbanken / Big Data / Data Cubes \par}
+        {\Large Dipl. Informatiker Applikationsentwicklung \par}
         \vspace{0.5cm}
+        {\Large TEKO Zürich \par}
+        \vspace{0.5cm}
+        {\Large Datenbanken / Big Data / Data Cubes \par}
         {\Large Dozent: Milad Fakiry \par}
         \vspace{0.5cm}
         {\Large Abgabedatum: 07.09.2025 \par}
@@ -96,33 +102,74 @@
 
 % ---------------- Einleitung ----------------
     \section{Einleitung}
-    In diesem Projekt wurde ein Notenverwaltungssystem für eine Hochschule entwickelt.
-    Das Szenario beinhaltet die Verwaltung von Studierenden, Semestern, Fächern, Klassen, Tests sowie deren Noten.
+    In diesem Projekt wurde ein Notenverwaltungssystem für die Website Notenverwaltung.ch entwickelt.
+    Das Szenario sieht vor, dass Schülerinnen und Schüler ihre eigenen Noten jederzeit einsehen und verwalten können, auch unabhängig von Lehrpersonen.
+    Zusätzlich können optionale Verwaltungsfunktionen für Fächer, Klassen, Tests und Semester genutzt werden,
+    sofern diese von einer Schule oder Lehrperson bereitgestellt werden.
     Die Anwendung besteht aus einer PostgreSQL-Datenbank und einem Spring Boot Service, welcher über eine REST-API zugänglich ist.
-    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \code{ADMIN}, \code{USER}).
+    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}).
 
     \subsection{Ziel der Arbeit}
-    Ziel war es, eine relationale Datenbank zu modellieren und mit SQL-Statements umzusetzen.
-    Darauf aufbauend sollte eine REST-API entstehen, die auf diese Datenbank zugreift und die Verwaltung der Daten ermöglicht.
+    Ziel der Arbeit ist es, ein Backend für Notenverwaltung.ch zu konzipieren und umzusetzen,
+    das insbesondere die eigenständige Notenverwaltung durch Schülerinnen und Schüler ermöglicht, unabhängig von Lehrpersonen. Im Fokus stehen:
+    \begin{itemize}
+        \item eine saubere relationale Datenbankstruktur,
+        \item eine klar dokumentierte REST-API (Spring Boot) für das Erfassen, Bearbeiten und Auswerten persönlicher Leistungen,
+        \item Authentifizierung und Autorisierung mittels JWT mit Rollen (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}),
+        \item optionale Anbindung schulischer Strukturen (Fächer, Klassen, Tests, Semester), sofern verfügbar.
+    \end{itemize}
 
     \subsection{Abgrenzung}
     Teil der Arbeit ist die Datenmodellierung, SQL-Implementierung, beispielhafte Abfragen und ein Testprotokoll.
-    Nicht Teil der Arbeit ist eine vollständige Benutzeroberfläche im Frontend oder die produktive Integration in bestehende Systeme.
+    Ebenso wird die Absicherung der Schnittstellen (JWT) und eine rollenbasierte Zugriffskontrolle
+    (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}) umgesetzt. Nicht Teil der Arbeit ist eine vollständige,
+    produktiv eingesetzte Frontend-Weboberfläche oder die Integration in bestehende Schulinfrastrukturen; der Fokus
+    liegt auf der Backend-Funktionalität für Notenverwaltung.ch. Ein eigenständiges Frontend (z. B. mit Angular) ist
+    im Rahmen dieser Arbeit nicht vorgesehen oder höchstens als sehr rudimentärer Prototyp zur Veranschaulichung der API gedacht.
 
 % ---------------- Anforderungsanalyse ----------------
     \section{Anforderungsanalyse}
+    Im Mittelpunkt steht, dass Schülerinnen und Schüler sich registrieren bzw. anmelden, ihre persönlichen Noten sicher einsehen,
+    erfassen und bei Bedarf bearbeiten sowie Auswertungen über ihre Leistungen vornehmen können.
+    Lehrpersonen und Admins erhalten, soweit vorgesehen, erweiterte Funktionen zur optionalen Verwaltung von Fächern, Klassen, Tests und Semestern.
+    Sicherheitsanforderungen (JWT-basierte Authentifizierung und rollenbasierte Autorisierung), Datenkonsistenz, Nachvollziehbarkeit von Änderungen
+    und der Schutz personenbezogener Daten (Datensparsamkeit, Zugriff nur für Berechtigte) sind zentrale nicht‑funktionale Anforderungen.
+
+    \subsubsection{Funktionale Anforderungen}
+    \begin{itemize}
+        \item Registrierung und Anmeldung von Nutzerinnen und Nutzern (STUDENT, optional TEACHER/ADMIN).
+        \item Selbstständige Verwaltung persönlicher Noten durch STUDENTs: Anlegen, Bearbeiten, Löschen von Tests/Noten im eigenen Bereich.
+        \item Einsicht in Notenverläufe, Berechnung von Durchschnittswerten und einfachen Auswertungen pro Fach/Semester.
+        \item Optionale Verwaltungsfunktionen für TEACHER/ADMIN: Fächer, Klassen, Tests und Semester anlegen und zuordnen.
+        \item Rollenbasierter Zugriff auf REST-API-Endpunkte mit klar definierten Berechtigungen.
+        \item Export einfacher Auswertungen (z. B. CSV/JSON) über die API (optional).
+        \item Änderungsnachvollziehbarkeit für sensible Aktionen (z. B. wer hat welche Note wann geändert), soweit vorgesehen.
+        \item Fehlermeldungen und Validierungen (z. B. Pflichtfelder, Wertebereiche, Dublettenprüfung bei eindeutigen Attributen).
+    \end{itemize}
+
+    \subsubsection{Nicht-funktionale Anforderungen}
+    \begin{itemize}
+        \item Sicherheit: JWT-basierte Authentifizierung, rollenbasierte Autorisierung, sichere Passwortspeicherung (Hashing), minimale Datenspeicherung.
+        \item Datenqualität: Konsistenz durch Constraints/Referentielle Integrität, Transaktionssicherheit und Validierungen im Service.
+        \item Performance und Skalierbarkeit: REST-API mit angemessenen Antwortzeiten unter typischer Last; effiziente Abfragen/Indizes.
+        \item Verfügbarkeit und Betrieb: Containerisierbar (Docker), reproduzierbare lokale Entwicklung (docker-compose), einfache Deployment-Pfade.
+        \item Nachvollziehbarkeit/Logging: Sinnvolle Server-Logs für Diagnose und Audit-Zwecke ohne sensible Daten im Klartext.
+        \item Benutzbarkeit der API: Konsistente Endpunkte, klare Fehlercodes/-nachrichten und grundlegende Dokumentation (z. B. OpenAPI/HTTP-Beispiele).
+        \item Wartbarkeit: Saubere Schichtung (Controller/Service/Repository), klare Domänenbegriffe, Tests für Kernfunktionen.
+    \end{itemize}
+
+    Die folgenden Entitäten und Beziehungen bilden diese Anforderungen im Datenmodell ab.
+
     Die realen Entitäten im Szenario sind:
 
     \begin{itemize}
-        \item \textbf{Student}: Person mit Matrikelnummer, persönlichen Daten und Status.
         \item \textbf{Semester}: Zeitraum mit Start- und Enddatum, in dem Fächer angeboten werden.
         \item \textbf{Fach (Subject)}: Lehrfach, das in Semestern angeboten wird.
-        \item \textbf{Semesterfach (SemesterSubject)}: Zuordnung eines Faches zu einem Semester.
         \item \textbf{Klasse}: Gruppe von Studierenden, die ein Semesterfach besuchen.
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
         \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
-        \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System.
-        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. \code{ADMIN}, \code{USER}).
+        \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
+        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}).
     \end{itemize}
 
     Die Beziehungen:
@@ -140,26 +187,17 @@
     \section{Datenmodell}
 
     \subsection{ER-Diagramm}
-    \textbf{TODO: Grafik ER-Diagramm mit Entitäten, Relationen und Kardinalitäten einfügen}
+    Das folgende ER-Diagramm stellt die Entitäten, deren Attribute und die Beziehungen mit Kardinalitäten dar:
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.65]{diagrams/nv-erd}
+        \caption{ER-Diagramm des Notenverwaltungssystems}
+        \label{fig:erd}
+    \end{figure}
 
     \subsection{Tabellenbeschreibung}
     Im Folgenden werden die Tabellen detailliert beschrieben. Für jede Entität gibt es eine separate Tabelle mit Attributen, Datentypen, Pflichten und Schlüsseln.
-
-    \subsubsection{students}
-    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
-        \hline
-        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
-        id & uuid & ja & Primärschlüssel \\ \hline
-        first\_name & varchar(100) & ja &  \\ \hline
-        last\_name & varchar(100) & ja &  \\ \hline
-        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
-        date\_of\_birth & date & nein &  \\ \hline
-        student\_number & varchar(50) & ja & Eindeutig (Unique) \\ \hline
-        active & boolean & ja & Default: true \\ \hline
-        created\_at & timestamp & ja &  \\ \hline
-        updated\_at & timestamp & nein &  \\ \hline
-    \end{longtable}
-    \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{semesters}
     \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
