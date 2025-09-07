@@ -115,7 +115,7 @@
     Zusätzlich können optionale Verwaltungsfunktionen für Fächer, Klassen, Tests und Semester genutzt werden,
     sofern diese von einer Schule oder Lehrperson bereitgestellt werden.
     Die Anwendung besteht aus einer PostgreSQL-Datenbank und einem Spring Boot Service, welcher über eine REST-API zugänglich ist.
-    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}).
+    Die Endpunkte sind durch JWT-Token abgesichert und es existieren die Rollen \code{USER} und \code{ADMIN}.
 
     \subsection{Ziel der Arbeit}
     Ziel der Arbeit ist es, ein Backend für Notenverwaltung.ch zu konzipieren und umzusetzen,
@@ -123,14 +123,14 @@
     \begin{itemize}
         \item eine saubere relationale Datenbankstruktur,
         \item eine klar dokumentierte REST-API (Spring Boot) für das Erfassen, Bearbeiten und Auswerten persönlicher Leistungen,
-        \item Authentifizierung und Autorisierung mittels JWT mit Rollen (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}),
+        \item Authentifizierung und Autorisierung mittels JWT mit Rollen (\code{USER}, \code{ADMIN}),
         \item optionale Anbindung schulischer Strukturen (Fächer, Klassen, Tests, Semester), sofern verfügbar.
     \end{itemize}
 
     \subsection{Abgrenzung}
     Teil der Arbeit ist die Datenmodellierung, SQL-Implementierung, beispielhafte Abfragen und ein Testprotokoll.
     Ebenso wird die Absicherung der Schnittstellen (JWT) und eine rollenbasierte Zugriffskontrolle
-    (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}) umgesetzt. Nicht Teil der Arbeit ist eine vollständige,
+    (\code{USER}, \code{ADMIN}) umgesetzt. Nicht Teil der Arbeit ist eine vollständige,
     produktiv eingesetzte Frontend-Weboberfläche oder die Integration in bestehende Schulinfrastrukturen; der Fokus
     liegt auf der Backend-Funktionalität für Notenverwaltung.ch. Ein eigenständiges Frontend (z. B. mit Angular) ist
     im Rahmen dieser Arbeit nicht vorgesehen oder höchstens als sehr rudimentärer Prototyp zur Veranschaulichung der API gedacht.
@@ -179,7 +179,7 @@
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
         \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
         \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
-        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. \code{STUDENT}, \code{TEACHER}, \code{ADMIN}).
+        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (\code{USER}, \code{ADMIN}).
     \end{itemize}
 
     Die Beziehungen:
@@ -319,11 +319,11 @@
         id & uuid & ja & Primärschlüssel \\ \hline
         username & varchar(100) & ja & Eindeutig (Unique) \\ \hline
         password & varchar(255) & ja & Hash (BCrypt) \\ \hline
-        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
+        email & varchar(255) & nein & Eindeutig (Unique) empfohlen \\ \hline
         first\_name & varchar(100) & nein &  \\ \hline
         last\_name & varchar(100) & nein &  \\ \hline
-        student\_number & varchar(50) & nein & Referenz auf Student möglich \\ \hline
-        active & boolean & ja & Default: true \\ \hline
+        date\_of\_birth & date & nein &  \\ \hline
+        active & boolean & ja & Default: false \\ \hline
         created\_at & timestamp & ja &  \\ \hline
         updated\_at & timestamp & nein &  \\ \hline
     \end{longtable}
@@ -338,78 +338,286 @@
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id
 
+% ---------------- Umsetzungsbeschreibung ----------------
+
+
+    \section{Umsetzungsbeschreibung}
+
+    Die Notenverwaltung ist als Spring Boot Service realisiert und stellt eine REST-API zur Verfügung. Persistenz wird über JPA/Hibernate umgesetzt. Die Authentifizierung
+    und Autorisierung erfolgen über Spring Security mit JWTs und rollenbasierten Berechtigungen
+    (\code{USER}, \code{ADMIN}). Eine OpenAPI/Swagger-Dokumentation beschreibt die Schnittstellen.
+
+    \subsection{Architektur \/ Spring Boot Service}
+    Die Anwendung ist als monolithischer Spring Boot Service aufgebaut und folgt einer klaren Schichtentrennung:
+    \begin{itemize}
+        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects}, \code{/api/semesters}, \code{/api/classes}, \code{/api/tests}, \code{/api/admin/users})
+        \item \textbf{Service-Schicht}: Kapselt Geschäftslogik, Transaktionen und Validierungen; orchestriert Zugriffe auf Repositories.
+        \item \textbf{Repository-Schicht}: Spring Data JPA Repositories für CRUD-Operationen und abgeleitete/annotierte Queries.
+        \item \textbf{Domain\/Model}: JPA-Entities (z. B. \code{Semester}, \code{Subject}, \code{Class}, \code{Test}, \code{Grade}, \code{User}, \code{Role}).
+    \end{itemize}
+    Der Service ist containerisierbar (Docker) und wird in der lokalen Entwicklung via \code{docker-compose} mit PostgreSQL betrieben.
+
+    \subsection{Persistenz mit JPA\/Hibernate}
+    Die Persistenzschicht verwendet Spring Data JPA mit Hibernate als Implementierung. Entities sind mit JPA-Annotationen versehen
+    (z. B. \code{@Entity}, \code{@Table}, \code{@Id}, \code{@ManyToOne}, \code{@OneToMany}). Repositories werden als Interfaces
+    (\code{extends JpaRepository<..., ...>}) definiert und liefern Standard-CRUD sowie abgeleitete Finder
+    (z. B. \code{findByName}, \code{findByUserIdAndTestId}).\newline
+    Transaktionen werden deklarativ über \code{@Transactional} (Service-Schicht) gesteuert.
+    Datenintegrität wird sowohl über DB-Constraints (PK, FK, Unique) als auch über Bean Validation (z. B. \code{@NotNull},
+    \code{@Size}) sichergestellt.
+
+    \subsection{Sicherheit: Spring Security mit JWT}
+    Die API ist über JWT gesichert. Der typische Flow:
+    \begin{enumerate}
+        \item Nutzer meldet sich über \code{POST /api/auth/login} mit Benutzername / Passwort an.
+        \item Bei Erfolg wird ein signiertes JWT (inkl. Rollen-Claims) ausgestellt und im Client gespeichert.
+        \item Folgeaufrufe enthalten \code{Authorization: Bearer <token>}; die Security-Konfiguration prüft Signatur, Gültigkeit und Rollen.
+    \end{enumerate}
+    Rollenbasierte Autorisierung wird per Ant-Matcher / Methodensicherheit \newline
+    (z.B. \code{@PreAuthorize("hasRole('ADMIN')")}) umgesetzt.
+    Passwörter werden mit BCrypt gehasht.
+
+    \subsection{OpenAPI / Swagger}
+    Die REST-Schnittstellen sind mit OpenAPI beschrieben. Während der Entwicklung ist die UI typischerweise unter \code{/swagger-ui}
+    bzw. \code{/swagger-ui.html} erreichbar. Die Spezifikation (JSON\/YAML) ermöglicht die Generierung von Clients und dient der API-Dokumentation.
+    Endpunkte, Request\/Response-Schemata sowie Fehlercodes sind dort ersichtlich.
+
 % ---------------- SQL-Implementierung ----------------
 
-
-    \section{SQL-Implementierung}
+    \subsection{SQL-Implementierung}
 
     \subsection{CREATE TABLE Befehle}
-    \begin{lstlisting}
-CREATE TABLE public.students (
+    \begin{lstlisting}[language=SQL]
+-- Benutzer (Users)
+CREATE TABLE public.users (
   id uuid PRIMARY KEY,
-  first_name varchar(100) NOT NULL,
-  last_name varchar(100) NOT NULL,
-  email varchar(255) NOT NULL,
+  username varchar(100) UNIQUE NOT NULL,
+  password varchar(255) NOT NULL,
+  email varchar(255) UNIQUE,
+  first_name varchar(100),
+  last_name varchar(100),
   date_of_birth date,
-  student_number varchar(50) NOT NULL,
-  active boolean DEFAULT true NOT NULL,
+  active boolean DEFAULT false,
   created_at timestamp NOT NULL,
   updated_at timestamp
+);
+
+-- Rollen je Benutzer (Element-Collection)
+CREATE TABLE public.user_roles (
+  user_id uuid NOT NULL,
+  role varchar(50) NOT NULL,
+  PRIMARY KEY (user_id, role),
+  FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+
+-- Fächer (Subjects)
+CREATE TABLE public.subjects (
+  id uuid PRIMARY KEY,
+  name varchar(150) NOT NULL
 );
 -- Weitere Tabellen siehe Anhang
     \end{lstlisting}
 
     \subsection{Beispielhafte INSERT-Befehle}
-    \begin{lstlisting}
-INSERT INTO students (
-  id,
-  first_name,
-  last_name,
-  email,
-  student_number,
-  created_at,
-  updated_at
-) VALUES (
-  gen_random_uuid(),
-  'Max',
-  'Mustermann',
-  'max@uni.de',
-  'S12345',
-  now(),
-  now()
-);
+    \noindent Die folgenden Inserts legen einige Beispiel-Datensätze an. Jede Gruppe ist nach Tabelle sortiert und kurz kommentiert.
+    \begin{lstlisting}[language=SQL]
+-- Users: legt zwei Benutzer (Studierende) an, die sich anmelden können
+INSERT INTO users (id, username, password, email, first_name, last_name, active, created_at, updated_at)
+VALUES
+  (gen_random_uuid(), 'max',   '{bcrypt}$2a$10$abcdefghijklmnopqrstuv', 'max@uni.de',   'Max',   'Mustermann', true, now(), now()),
+  (gen_random_uuid(), 'erika', '{bcrypt}$2a$10$abcdefghijklmnopqrstuv', 'erika@uni.de', 'Erika', 'Musterfrau', true, now(), now());
 
-INSERT INTO subjects (
-  id,
-  name
-) VALUES (
-  gen_random_uuid(),
-  'Mathematik'
-);
+-- User-Rollen: weist beiden die Rolle STUDENT zu
+INSERT INTO user_roles (user_id, role)
+SELECT u.id, 'STUDENT'
+FROM users u
+WHERE u.username IN ('max','erika');
+
+-- Subjects: legt zwei Fächer an, auf die sich spätere Semester/Test-Daten beziehen
+INSERT INTO subjects (id, name)
+VALUES
+  (gen_random_uuid(), 'Mathematik'),
+  (gen_random_uuid(), 'Informatik');
+
+-- Semesters: definiert einen Beispiel-Semester-Zeitraum
+INSERT INTO semesters (id, name, start_date, end_date)
+VALUES
+  (gen_random_uuid(), 'HS2025', '2025-09-01', '2026-01-31');
+
+-- Semester_Subjects: ordnet Fächer einem Semester zu (eine Kombination pro Zeile)
+-- Zweck: bildet die Lehrangebote in einem Semester ab
+INSERT INTO semester_subjects (id, semester_id, subject_id)
+SELECT gen_random_uuid(), s.id, sub.id
+FROM semesters s CROSS JOIN subjects sub
+WHERE s.name = 'HS2025' AND sub.name IN ('Mathematik','Informatik');
+
+-- Classes: legt eine Klasse für Mathematik und eine für Informatik im Semester HS2025 an
+INSERT INTO classes (id, semester_subject_id, name)
+SELECT gen_random_uuid(), ss.id, n
+FROM (
+  SELECT 'Mathematik' AS sub_name, 'Klasse M-1' AS n UNION ALL
+  SELECT 'Informatik',               'Klasse I-1'
+) x
+JOIN subjects sub ON sub.name = x.sub_name
+JOIN semesters sem ON sem.name = 'HS2025'
+JOIN semester_subjects ss ON ss.subject_id = sub.id AND ss.semester_id = sem.id;
+
+-- Tests: legt je einen Test pro Klasse an (z. B. erste Prüfung)
+INSERT INTO tests (id, name, class_id, semester_subject_id, max_points, date)
+SELECT gen_random_uuid(), CONCAT(sub.name, ' Test 1'), c.id, ss.id, 100.00, '2025-10-15'
+FROM classes c
+JOIN semester_subjects ss ON ss.id = c.semester_subject_id
+JOIN subjects sub ON sub.id = ss.subject_id;
+
+-- Grades: vergibt Beispielnoten für max und erika auf die angelegten Tests
+INSERT INTO grades (id, value, weight, user_id, test_id, comment)
+SELECT gen_random_uuid(), v.value, 50.00, u.id, t.id, v.cmt
+FROM (
+  SELECT 'max' AS uname,   5.50::numeric(4,2) AS value, 'Erste Prüfung'::varchar(255) AS cmt UNION ALL
+  SELECT 'erika',           4.75::numeric(4,2),         'Erste Prüfung'
+) v
+JOIN users u ON u.username = v.uname
+JOIN tests t ON t.name LIKE '% Test 1';
     \end{lstlisting}
+
+    \textit{Erläuterung:}
+    \begin{itemize}
+        \item Users: Erstellt zwei Demo-Benutzer (Studierende), um Join-Abfragen zu veranschaulichen.
+        \item Subjects: Fügt die Fächer hinzu, die in HS2025 angeboten werden.
+        \item Semesters: Definiert den Zeitraum HS2025, auf den die anderen Daten referenzieren.
+        \item Semester\_Subjects: Verknüpft Semester und Fächer und bildet das Lehrangebot ab.
+        \item Classes: Legt je eine Klasse pro Fach im Semester HS2025 an.
+        \item Tests: Erzeugt pro Klasse einen Test mit Datum und Maximalpunkten.
+        \item Grades: Vergibt zwei Noten für die beiden Studierenden auf die Tests.
+    \end{itemize}
 
 % ---------------- Beispielabfragen ----------------
 
-
-    \section{Beispielabfragen / UI}
+    \subsection{Beispielabfragen / UI}
 
     \subsection{SQL-Abfragen}
     \begin{lstlisting}[language=SQL]
--- Alle Noten eines Studenten
-SELECT s.first_name, s.last_name, g.value, t.name
+-- 1) Alle Noten eines Benutzers (Student) anhand des Usernamens
+SELECT u.first_name, u.last_name, g.value, t.name AS test_name, sub.name AS subject, sem.name AS semester
 FROM grades g
-JOIN students s ON g.student_id = s.id
+JOIN users u ON g.user_id = u.id
 JOIN tests t ON g.test_id = t.id
-WHERE s.student_number = 'S12345';
+JOIN semester_subjects ss ON t.semester_subject_id = ss.id
+JOIN subjects sub ON ss.subject_id = sub.id
+JOIN semesters sem ON ss.semester_id = sem.id
+WHERE u.username = 'max'
+ORDER BY sem.start_date, sub.name, t.date;
+
+-- 2) Alle Tests in einem bestimmten Semester, gruppiert nach Benutzer (nur Tests, Note optional)
+SELECT sem.name AS semester,
+       u.username,
+       u.first_name,
+       u.last_name,
+       sub.name      AS subject,
+       c.name        AS class,
+       t.name        AS test_name,
+       t.date        AS test_date,
+       g.value       AS grade
+FROM semesters sem
+JOIN semester_subjects ss ON ss.semester_id = sem.id
+JOIN subjects sub ON sub.id = ss.subject_id
+JOIN classes c ON c.semester_subject_id = ss.id
+JOIN tests t ON t.class_id = c.id
+LEFT JOIN grades g ON g.test_id = t.id
+LEFT JOIN users u ON u.id = g.user_id
+WHERE sem.name = 'HS2025'
+ORDER BY u.username NULLS LAST, sub.name, t.date;
+
+-- 3) Alle Tests eines Semesters mit Durchschnittsnote pro Test
+SELECT sem.name AS semester,
+       sub.name AS subject,
+       t.name   AS test_name,
+       t.date,
+       ROUND(AVG(g.value), 2) AS avg_grade,
+       COUNT(g.id) AS grades_count
+FROM tests t
+JOIN classes c ON c.id = t.class_id
+JOIN semester_subjects ss ON ss.id = c.semester_subject_id
+JOIN semesters sem ON sem.id = ss.semester_id
+JOIN subjects sub ON sub.id = ss.subject_id
+LEFT JOIN grades g ON g.test_id = t.id
+WHERE sem.name = 'HS2025'
+GROUP BY sem.name, sub.name, t.name, t.date
+ORDER BY sub.name, t.date;
+
+-- 4) Notenübersicht je Benutzer und Fach in einem Semester (Pivot-ähnlich)
+SELECT u.username,
+       sub.name AS subject,
+       ROUND(AVG(g.value), 2) AS avg_grade_subject
+FROM users u
+JOIN grades g ON g.user_id = u.id
+JOIN tests t ON t.id = g.test_id
+JOIN classes c ON c.id = t.class_id
+JOIN semester_subjects ss ON ss.id = c.semester_subject_id
+JOIN subjects sub ON sub.id = ss.subject_id
+JOIN semesters sem ON sem.id = ss.semester_id
+WHERE sem.name = 'HS2025'
+GROUP BY u.username, sub.name
+ORDER BY u.username, sub.name;
+
+-- 5) Fehlende Bewertungen: Tests ohne Note je Benutzer (zeigt offene Bewertungen)
+SELECT u.username,
+       sub.name AS subject,
+       t.name   AS test_name,
+       t.date   AS test_date
+FROM users u
+JOIN semesters sem ON sem.name = 'HS2025'
+JOIN semester_subjects ss ON ss.semester_id = sem.id
+JOIN subjects sub ON sub.id = ss.subject_id
+JOIN classes c ON c.semester_subject_id = ss.id
+JOIN tests t ON t.class_id = c.id
+LEFT JOIN grades g ON g.test_id = t.id AND g.user_id = u.id
+WHERE g.id IS NULL
+ORDER BY u.username, sub.name, t.date;
+
+-- 6) Rangliste pro Test (beste zuerst) inkl. Prozent der Maximalpunkte
+SELECT t.name AS test_name,
+       u.username,
+       g.value AS grade,
+       t.max_points,
+       ROUND((g.value / NULLIF(t.max_points,0)) * 100, 2) AS pct_of_max
+FROM grades g
+JOIN tests t ON t.id = g.test_id
+JOIN users u ON u.id = g.user_id
+WHERE t.name LIKE '%Test 1%'
+ORDER BY t.name, pct_of_max DESC NULLS LAST;
+
+-- 7) Workload je Fach im Semester: Anzahl Klassen, Tests, Bewertungen
+WITH test_counts AS (
+  SELECT ss.id,
+         COUNT(DISTINCT c.id) AS classes_cnt,
+         COUNT(DISTINCT t.id) AS tests_cnt,
+         COUNT(g.id)          AS grades_cnt
+  FROM semester_subjects ss
+  LEFT JOIN classes c ON c.semester_subject_id = ss.id
+  LEFT JOIN tests t   ON t.class_id = c.id
+  LEFT JOIN grades g  ON g.test_id = t.id
+  GROUP BY ss.id
+)
+SELECT sem.name AS semester,
+       sub.name AS subject,
+       tc.classes_cnt,
+       tc.tests_cnt,
+       tc.grades_cnt
+FROM test_counts tc
+JOIN semester_subjects ss ON ss.id = tc.id
+JOIN semesters sem ON sem.id = ss.semester_id
+JOIN subjects sub ON sub.id = ss.subject_id
+WHERE sem.name = 'HS2025'
+ORDER BY sub.name;
     \end{lstlisting}
 
-    \textbf{Beispielausgabe:}
+    \textbf{Beispielausgabe (Auszug):}
     \begin{verbatim}
-Max Mustermann | 5.50 | Mathematik Test 1
-Max Mustermann | 4.75 | Informatik Test 1
+1) Max Mustermann | 5.50 | Mathematik Test 1 | Mathematik | HS2025
+2) HS2025 | max | Max | Mustermann | Mathematik | Klasse M-1 | Mathematik Test 1 | 2025-10-15 | 5.50
+3) HS2025 | Mathematik | Mathematik Test 1 | 2025-10-15 | 5.12 | 2
     \end{verbatim}
-
-    \textbf{TODO: Screenshot aus DB-Client einfügen}
     \newpage
 
 % ---------------- Testprotokoll ----------------
@@ -422,25 +630,25 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsection{Testfälle}\label{sec:testfaelle}
 
-    \subsubsection{T1 - Student anlegen (gültige Daten)}
+    \subsubsection{T1 - User anlegen (gültige Daten)}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T1 \\ \hline
-            Erwartet & Student wird gespeichert \\ \hline
+            Erwartet & User wird gespeichert \\ \hline
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV (Docker, Postgres 16, SB 3.3) \\ \hline
-            Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit \code{student_number=S12345} \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} mit Body \code{\{first_name, last_name, email, student_number\}} \\ \hline
-            Response (gekürzt) & \code{201 Created}; JSON mit \code{id, first_name, last_name, email, student_number} \\ \hline
-            Post-Conditions & Student existiert in Tabelle \code{students}; Auditfelder gesetzt \\ \hline
-            Referenz & REQ-STU-001 \\ \hline
+            Pre-Conditions & Admin-Token vorhanden; Username noch nicht vergeben \\ \hline
+            Endpoint/Schritte & \code{POST /api/admin/users} mit Body \code{\{username, password, roles:[\"USER\"]\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; JSON mit \code{id, username, roles, active, created_at} \\ \hline
+            Post-Conditions & User existiert in Tabelle \code{users}; Auditfelder gesetzt \\ \hline
+            Referenz & REQ-USR-001 \\ \hline
         \end{tabularx}
     \end{small}
 
-    \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
+    \subsubsection{T2 - User anlegen (fehlende Pflichtfelder)}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
@@ -451,10 +659,10 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Request ohne Pflichtfelder \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} (ungültiger Body) \\ \hline
+            Endpoint/Schritte & \code{POST /api/admin/users} (ungültiger Body) \\ \hline
             Response (gekürzt) & \code{400 Bad Request} mit Validierungsfehlern \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
-            Referenz & REQ-STU-002 \\ \hline
+            Referenz & REQ-USR-002 \\ \hline
         \end{tabularx}
     \end{small}
 
@@ -576,9 +784,9 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Test und Student existieren \\ \hline
-            Endpoint/Schritte & \code{POST /api/grades} mit \code{\{studentId, testId, value\}} \\ \hline
-            Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{studentId, testId, value} \\ \hline
+            Pre-Conditions & Test und User existieren \\ \hline
+            Endpoint/Schritte & \code{POST /api/grades} mit \code{\{userId, testId, value\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{userId, testId, value} \\ \hline
             Post-Conditions & Datensatz in \code{grades} existiert \\ \hline
             Referenz & REQ-GRD-001 \\ \hline
         \end{tabularx}
@@ -594,8 +802,8 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Grade für (\code{studentId}, \code{testId}) existiert bereits \\ \hline
-            Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{studentId+testId} \\ \hline
+            Pre-Conditions & Grade für (\code{userId}, \code{testId}) existiert bereits \\ \hline
+            Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{userId+testId} \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehlermeldung \\ \hline
             Post-Conditions & Kein zweiter Datensatz für gleiche Kombination \\ \hline
             Referenz & REQ-GRD-002 \\ \hline
@@ -613,8 +821,8 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Gültiger JWT-Token vorhanden \\ \hline
-            Endpoint/Schritte & \code{GET /api/students} mit \code{Authorization: Bearer <token>} \\ \hline
-            Response (gekürzt) & \code{200 OK}; Liste der Studenten \\ \hline
+            Endpoint/Schritte & \code{GET /api/semesters} mit \code{Authorization: Bearer <token>} \\ \hline
+            Response (gekürzt) & \code{200 OK}; Seite mit Semestern \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-001 \\ \hline
         \end{tabularx}
@@ -631,7 +839,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Kein \code{Authorization} Header \\ \hline
-            Endpoint/Schritte & \code{GET /api/students} ohne Token \\ \hline
+            Endpoint/Schritte & \code{GET /api/semesters} ohne Token \\ \hline
             Response (gekürzt) & \code{401 Unauthorized} \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-002 \\ \hline
@@ -649,7 +857,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Benutzer mit \code{ROLE_USER} ohne Adminrechte \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} mit \code{ROLE_USER} \\ \hline
+            Endpoint/Schritte & \code{POST /api/semesters} mit \code{ROLE_USER} \\ \hline
             Response (gekürzt) & \code{403 Forbidden} \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
             Referenz & SEC-AUTH-003 \\ \hline
@@ -691,30 +899,13 @@ Max Mustermann | 4.75 | Informatik Test 1
             Referenz & REQ-SUB-003 \\ \hline
         \end{tabularx}
     \end{small}
+    \subsection{Testdaten}
+    In diesem Repository stehen zwei HTTP-Dateien zur Verf\"ugung, mit denen sich die Testdaten einfach vorbereiten und alle Testf\"alle ausf\"uhren lassen: \code{testdata-setup.http} und \code{testcase.http}.\newline
+    Beide Dateien liegen im Projektwurzelverzeichnis (relative Pfade: \code{./testdata-setup.http} und \code{./testcase.http}). F\"uhren Sie zun\"achst \code{testdata-setup.http} aus, um die Basisdaten (z.\,B. Semester, Subject, Zuordnung, Klasse, Test) anzulegen; anschliessend k\"onnen die einzelnen Testf\"alle direkt \"uber \code{testcase.http} gegen die laufende Anwendung ausgef\"uhrt werden.\newline
+    Die Requests sind so vorbereitet, dass sie mit dem JetBrains HTTP Client (IDE) sofort lauff\"ahig sind und Token/IDs automatisch in der Session hinterlegt werden.
+    
 
-    \subsection{Testdaten (Beispiel)}
-    \begin{lstlisting}[language=SQL]
--- Minimaler Datensatz fuer End-to-End Tests
-INSERT INTO semesters (
-  id,
-  name,
-  start_date,
-  end_date
-) VALUES (
-  gen_random_uuid(),
-  'HS2025',
-  '2025-09-01',
-  '2026-01-31'
-);
-
-INSERT INTO subjects (
-  id,
-  name
-) VALUES (
-  gen_random_uuid(),
-  'Mathematik'
-);
-    \end{lstlisting}
+    \newpage
 
 % ---------------- Fazit ----------------
 
@@ -745,19 +936,31 @@ INSERT INTO subjects (
     Insgesamt hat das Projekt meine Stärken im Bereich Spring und Datenbank-Services bestätigt und
     gleichzeitig meinen Werkzeugkasten um wichtige Security- und Dokumentations-Bausteine erweitert.
 
+    Rückblickend war es zudem spannend, die gesamte Dokumentation mit \LaTeX{} zu erstellen. Die klare
+    Trennung von Inhalt und Formatierung, die sauberen Querverweise sowie die gute Unterstützung für
+    Code-Listings und Tabellen haben zu einer einheitlichen Ausarbeitung beigetragen.
+
+    Ein weiterer wichtiger Punkt war die Erstellung der CI/CD-Pipeline zur automatischen PDF-Generierung.
+    Diese Phase war zuweilen recht anstrengend: Von der korrekten Einrichtung der \LaTeX{}-Toolchain in
+    der Build-Umgebung über Paketabhängigkeiten bis hin zu Pfad- und Encoding-Themen gab es einige
+    Hürden. Nachdem alle Stolpersteine beseitigt waren, konnte die Pipeline schließlich zuverlässig die
+    PDF-Dokumentation bauen – ein Ergebnis, das den Aufwand nachhaltig rechtfertigt und die Wartbarkeit
+    in Zukunft deutlich verbessert.
 % ---------------- Anhang ----------------
 
+    \newpage
 
     \section{Anhang}
 
     \subsection{SQL-Dump}
-    \textbf{TODO: Vollständiger SQL-Dump aller Tabellen anhängen}
+    Die vollständigen, lauffähigen Testdaten befinden sich in der Datei \code{data\\testdata.sql} dieses Repositories.\newline
+    Ausführung z. B. mit psql:
+    \begin{lstlisting}[language=bash]
+psql "host=localhost port=1232 dbname=notenverwaltung user=postgres password=postgres" -f data/testdata.sql
+    \end{lstlisting}
 
     \subsection{OpenAPI Dokumentation}
     Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \code{doc.json}.
     Swagger-UI ist unter \code{/api/public/docs} erreichbar.
-
-    \subsection{Screenshots}
-    \textbf{TODO: Screenshots der REST-API und SQL-Abfragen einfügen}
 
 \end{document}

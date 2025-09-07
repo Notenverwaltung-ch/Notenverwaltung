@@ -9,16 +9,6 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-### get all students (paged)
-
-GET http://localhost:8080/api/students?page=0&size=20
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### get active students (paged)
-GET http://localhost:8080/api/students/active?page=0&size=20
-Authorization: Bearer {{token}}
-Content-Type: application/json
 
 ### admin: create user
 POST http://localhost:8080/api/admin/users

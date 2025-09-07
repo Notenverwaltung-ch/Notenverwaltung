@@ -59,14 +59,43 @@ The project follows a standard layered architecture:
 
 ### Protected Endpoints (Authentication Required)
 
-#### Student Endpoints
+#### User Management (Admin only)
+- `GET /api/admin/users` (paged)
+- `GET /api/admin/users/active` (paged)
+- `POST /api/admin/users` (create user)
+- `PUT /api/admin/users/{username}/password` (change password)
+- `PUT /api/admin/users/{username}/active?active={true|false}` (activate/deactivate)
+- `POST /api/admin/users/{username}/roles` (grant role)
+- `DELETE /api/admin/users/{username}/roles/{role}` (revoke role)
+- `DELETE /api/admin/users/{username}` (delete user)
 
-- `GET /api/students`: Get all students
-- `GET /api/students/active`: Get all active students
-- `GET /api/students/{id}`: Get a student by ID
-- `POST /api/students`: Create a new student
-- `PUT /api/students/{id}`: Update a student
-- `DELETE /api/students/{id}`: Delete a student
+#### Semesters
+- `GET /api/semesters` (paged)
+- `GET /api/semesters/{id}`
+- `POST /api/semesters` (ADMIN)
+- `PUT /api/semesters/{id}` (ADMIN)
+- `DELETE /api/semesters/{id}` (ADMIN)
+
+#### Subjects
+- `GET /api/subjects` (paged)
+- `GET /api/subjects/{id}`
+- `POST /api/subjects` (ADMIN)
+- `PUT /api/subjects/{id}` (ADMIN)
+- `DELETE /api/subjects/{id}` (ADMIN)
+
+#### Classes
+- `GET /api/classes` (paged)
+- `GET /api/classes/{id}`
+- `POST /api/classes` (ADMIN)
+- `PUT /api/classes/{id}` (ADMIN)
+- `DELETE /api/classes/{id}` (ADMIN)
+
+#### Tests
+- `GET /api/tests` (paged)
+- `GET /api/tests/{id}`
+- `POST /api/tests` (ADMIN)
+- `PUT /api/tests/{id}` (ADMIN)
+- `DELETE /api/tests/{id}` (ADMIN)
 
 ## Authentication and Authorization
 
@@ -84,19 +113,14 @@ The application also supports JWT token-based authentication, which is more suit
 
 The application implements role-based access control with two roles:
 
-- **ROLE_USER**: Regular users who can view student data
-- **ROLE_ADMIN**: Administrators who can view, create, update, and delete student data
+- ROLE_USER: General users (students) who can read domain data.
+- ROLE_ADMIN: Administrators who can create, update, and delete domain data and manage users.
 
-#### Endpoint Access by Role
-
-| Endpoint | ROLE_USER | ROLE_ADMIN |
-|----------|-----------|------------|
-| GET /api/students | ✅ | ✅ |
-| GET /api/students/active | ✅ | ✅ |
-| GET /api/students/{id} | ✅ | ✅ |
-| POST /api/students | ❌ | ✅ |
-| PUT /api/students/{id} | ❌ | ✅ |
-| DELETE /api/students/{id} | ❌ | ✅ |
+Key rules:
+- Public endpoints under /api/public/** and /api/public/auth/** do not require a token.
+- Read endpoints (GET) on /api/semesters, /api/subjects, /api/classes, /api/tests require a valid token with either ROLE_USER or ROLE_ADMIN.
+- Write endpoints (POST, PUT, DELETE) on those resources require ROLE_ADMIN.
+- All /api/admin/users/** endpoints require ROLE_ADMIN.
 
 #### User Registration
 
