@@ -966,14 +966,27 @@ ORDER BY sub.name;
     \section{Anhang}
 
     \subsection{SQL-Dump}
-    Die vollständigen, lauffähigen Testdaten befinden sich in der Datei \code{data\\testdata.sql} dieses Repositories.\newline
-    Ausführung z. B. mit psql:
+    Der vollständige SQL-Dump befindet sich im Ordner \code{documentation/dump} dieses Repositories
+    (\code{documentation/dump/backup_nv_final.sql}).\newline
+    Der Dump wurde mit folgendem Befehl erstellt:
     \begin{lstlisting}[language=bash]
-psql "host=localhost port=1232 dbname=notenverwaltung user=postgres password=postgres" -f data/testdata.sql
+pg_dump -h localhost -p 5432 -U postgres -d notenverwaltung -F p -f documentation/dump/backup_nv_final.sql
     \end{lstlisting}
 
     \subsection{OpenAPI Dokumentation}
-    Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \code{doc.json}.
+    Die vollständige OpenAPI/Swagger-Dokumentation der REST-API befindet sich im Ordner \code{documentation/swagger/}
+    (\code{documentation/swagger/documentation.json}).
     Swagger-UI ist unter \code{/api/public/docs} erreichbar.
+
+    \subsection{Sourcecode und Release}
+    Der komplette Sourcecode ist öffentlich auf GitHub unter:\\
+    \url{https://github.com/Notenverwaltung-ch/Notenverwaltung}
+
+    In der finalen Abgabe liegt zusätzlich eine ZIP-Datei bei, die den vollständigen Sourcecode enthält.\\
+    Alternativ steht ein Release zum Download bereit:
+    \href{https://github.com/Notenverwaltung-ch/Notenverwaltung/releases/tag/25.0.17}{Release 25.0.17}
+
+    \subsection{Testfälle aus dem Testprotokoll}
+    Die HTTP Files um die Testfälle aus dem Testprotokoll ausführen zu können befinden sich im Ordner \code{documentation/testcases} dieses Repositories.
 
 \end{document}

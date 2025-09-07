@@ -9,7 +9,6 @@ A Spring Boot REST application for managing student grades with JPA integration 
 - **PostgreSQL**: Database
 - **Flyway**: Database migrations
 - **Spring Security**: Authentication and authorization
-- **OAuth2**: Google authentication
 - **Docker**: Container for PostgreSQL
 - **Lombok**: Reduce boilerplate code
 - **JUnit & Spring Test**: Testing
@@ -30,21 +29,15 @@ The project follows a standard layered architecture:
 
 - Java 17 or higher
 - Docker and Docker Compose
-- Google OAuth2 credentials
 
 ### Setup
 
 1. Clone the repository
-2. Set environment variables for Google OAuth2:
-   ```
-   GOOGLE_CLIENT_ID=your_client_id
-   GOOGLE_CLIENT_SECRET=your_client_secret
-   ```
-3. Start the PostgreSQL database:
+2. Start the PostgreSQL database:
    ```
    docker-compose up -d
    ```
-4. Run the application:
+3. Run the application:
    ```
    ./gradlew bootRun
    ```
@@ -108,15 +101,12 @@ The project follows a standard layered architecture:
 
 ## Authentication and Authorization
 
-The application supports two authentication methods and implements role-based access control.
+The application uses JWT-based authentication and implements role-based access control.
 
-### OAuth2 Authentication
-
-OAuth2 with Google is supported for authentication. This is useful for web applications that can redirect to Google's authentication page.
 
 ### JWT Token Authentication
 
-The application also supports JWT token-based authentication, which is more suitable for API clients and mobile applications.
+The application uses JWT token-based authentication, which is suitable for API clients and web frontends.
 
 ### Role-Based Access Control
 

@@ -234,6 +234,7 @@ jobs:
   release:
     name: Create GitHub Release with artifacts
     needs: [build-and-tag, compute-version, latex]
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: write
