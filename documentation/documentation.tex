@@ -13,6 +13,11 @@
 \usepackage{hyperref}
 \usepackage{xurl}
 \usepackage{xcolor}
+\usepackage{pdflscape}
+
+% TikZ for diagrams from text
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 
 \graphicspath{{diagrams/}}
 \usepackage{float}
@@ -101,6 +106,8 @@
     \newpage
 
 % ---------------- Einleitung ----------------
+
+
     \section{Einleitung}
     In diesem Projekt wurde ein Notenverwaltungssystem für die Website Notenverwaltung.ch entwickelt.
     Das Szenario sieht vor, dass Schülerinnen und Schüler ihre eigenen Noten jederzeit einsehen und verwalten können, auch unabhängig von Lehrpersonen.
@@ -128,6 +135,8 @@
     im Rahmen dieser Arbeit nicht vorgesehen oder höchstens als sehr rudimentärer Prototyp zur Veranschaulichung der API gedacht.
 
 % ---------------- Anforderungsanalyse ----------------
+
+
     \section{Anforderungsanalyse}
     Im Mittelpunkt steht, dass Schülerinnen und Schüler sich registrieren bzw. anmelden, ihre persönlichen Noten sicher einsehen,
     erfassen und bei Bedarf bearbeiten sowie Auswertungen über ihre Leistungen vornehmen können.
@@ -179,22 +188,59 @@
         \item Ein \textbf{Semesterfach} kann mehrere \textbf{Klassen} haben.
         \item Eine \textbf{Klasse} hat mehrere \textbf{Tests}.
         \item Ein \textbf{Test} hat mehrere \textbf{Noten}.
-        \item Ein \textbf{Student} kann mehrere \textbf{Noten} haben.
+        \item Ein \textbf{Benutzer} kann mehrere \textbf{Noten} haben.
         \item Ein \textbf{Benutzer} kann mehrere Rollen haben.
     \end{itemize}
 
 % ---------------- Datenmodell ----------------
-    \section{Datenmodell}
+    \newpage
+    \begin{landscape}
+        \section{Datenmodell}
 
-    \subsection{ER-Diagramm}
-    Das folgende ER-Diagramm stellt die Entitäten, deren Attribute und die Beziehungen mit Kardinalitäten dar:
+        \subsection{ER-Diagramm}
+        Das folgende ER-Diagramm stellt die Entitäten, deren Attribute und die Beziehungen mit Kardinalitäten dar:
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[scale=0.65]{diagrams/nv-erd}
-        \caption{ER-Diagramm des Notenverwaltungssystems}
-        \label{fig:erd}
-    \end{figure}
+        \thispagestyle{empty}
+        \begin{figure}[H]
+            \centering
+            \resizebox{\linewidth}{!}{
+                \begin{tikzpicture}[
+                    scale=1.0,
+                    every node/.style={scale=1.0},
+                    entity/.style={draw, rectangle, rounded corners, thick, align=left, inner sep=3pt, fill=white},
+                    attr/.style={font=\scriptsize},
+                    rel/.style={-Latex, thick},
+                    crow/.style={-{Straight Barb[length=2.5mm]}, thick},
+                    one/.style={-{}, thick},
+                    note/.style={font=\scriptsize, fill=white, inner sep=1pt}
+                ]
+                    % Entities
+                    \node[entity] (Semester) {\textbf{semesters}\\\footnotesize id: uuid (PK)\\ name: varchar(100)\\ start\_date: date\\ end\_date: date};
+                    \node[entity, right=2.8cm of Semester] (Subject) {\textbf{subjects}\\\footnotesize id: uuid (PK)\\ name: varchar(150)};
+                    \node[entity, below=2.0cm of $(Semester)!0.5!(Subject)$] (SemSub) {\textbf{semester\_subjects}\\\footnotesize id: uuid (PK)\\ semester\_id: uuid (FK)\\ subject\_id: uuid (FK)};
+                    \node[entity, below=2.0cm of SemSub] (Class) {\textbf{classes}\\\footnotesize id: uuid (PK)\\ semester\_subject\_id: uuid (FK)\\ name: varchar(100)};
+                    \node[entity, right=3.0cm of Class] (Test) {\textbf{tests}\\\footnotesize id: uuid (PK)\\ name: varchar(150)\\ class\_id: uuid (FK)\\ semester\_subject\_id: uuid (FK)\\ max\_points: numeric(10,2)\\ date: date};
+                    \node[entity, right=3.0cm of Test] (Grade) {\textbf{grades}\\\footnotesize id: uuid (PK)\\ value: numeric(4,2)\\ weight: numeric(4,2)\\ user\_id: uuid (FK)\\ test\_id: uuid (FK)\\ comment: varchar(255)};
+                    \node[entity, above=1.8cm of Grade] (User) {\textbf{users}\\\footnotesize id: uuid (PK)\\ username: varchar(100)\\ password: varchar(255)\\ email: varchar(255)\\ first\_name: varchar(100)\\ last\_name: varchar(100)\\ active: boolean\\ created\_at: timestamp};
+                    \node[entity, right=2.8cm of User] (Role) {\textbf{roles}\\\footnotesize id: uuid (PK)\\ name: varchar(50)};
+                    \node[entity, below=1.8cm of Role] (UserRole) {\textbf{user\_roles}\\\footnotesize user\_id: uuid (FK)\\ role\_id: uuid (FK)};
+
+                    % Relationships
+                    \draw[rel] (Semester) -- node[above, note]{1..*} (SemSub);
+                    \draw[rel] (SemSub) -- node[above, note]{*..1} (Subject);
+                    \draw[rel] (SemSub) -- node[left, note]{1..*} (Class);
+                    \draw[rel] (Class) -- node[above, note]{1..*} (Test);
+                    \draw[rel] (Test) -- node[above, note]{1..*} (Grade);
+                    \draw[rel] (User) -- node[right, note]{1..*} (Grade);
+                    \draw[rel] (User) -- node[above, note]{1..*} (UserRole);
+                    \draw[rel] (UserRole) -- node[above, note]{*..1} (Role);
+                \end{tikzpicture}
+            }
+            \caption{ER-Diagramm des Notenverwaltungssystems}
+            \label{fig:erd}
+        \end{figure}
+    \end{landscape}
+    \newpage
 
     \subsection{Tabellenbeschreibung}
     Im Folgenden werden die Tabellen detailliert beschrieben. Für jede Entität gibt es eine separate Tabelle mit Attributen, Datentypen, Pflichten und Schlüsseln.
@@ -259,11 +305,11 @@
         id & uuid & ja & Primärschlüssel \\ \hline
         value & numeric(4,2) & ja & Notenwert (z. B. 1.0-6.0) \\ \hline
         weight & numeric(4,2) & nein & Gewichtung in Prozent \\ \hline
-        student\_id & uuid & ja & FK $\rightarrow$ students(id) \\ \hline
+        user\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
         test\_id & uuid & ja & FK $\rightarrow$ tests(id) \\ \hline
         comment & varchar(255) & nein & Freitext \\ \hline
     \end{longtable}
-    \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
+    \textbf{Schlüssel / Constraints:} PK: id; FK: user\_id; FK: test\_id; Unique(user\_id, test\_id) empfohlen
 
     \subsubsection{users}
     \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
@@ -290,9 +336,10 @@
         role & varchar(50) & ja & z. B. ADMIN, USER \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id
-    \newpage
 
 % ---------------- SQL-Implementierung ----------------
+
+
     \section{SQL-Implementierung}
 
     \subsection{CREATE TABLE Befehle}
@@ -341,6 +388,8 @@ INSERT INTO subjects (
     \end{lstlisting}
 
 % ---------------- Beispielabfragen ----------------
+
+
     \section{Beispielabfragen / UI}
 
     \subsection{SQL-Abfragen}
@@ -363,6 +412,8 @@ Max Mustermann | 4.75 | Informatik Test 1
     \newpage
 
 % ---------------- Testprotokoll ----------------
+
+
     \section{Testprotokoll}
 
     \subsection{Beschreibung}
@@ -621,7 +672,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Referenz & REQ-GRD-003 \\ \hline
         \end{tabularx}
     \end{small}
-    
+
     \subsubsection{T15 - Subject löschen mit Referenzen}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
@@ -665,6 +716,8 @@ INSERT INTO subjects (
     \end{lstlisting}
 
 % ---------------- Fazit ----------------
+
+
     \section{Fazit \& Reflexion}
     Das Projekt hat gezeigt, wie eine relationale Datenbank modelliert und umgesetzt werden kann.
     Gut funktioniert hat die Modellierung der Entitäten und die Umsetzung der REST-API.
@@ -692,6 +745,8 @@ INSERT INTO subjects (
     gleichzeitig meinen Werkzeugkasten um wichtige Security- und Dokumentations-Bausteine erweitert.
 
 % ---------------- Anhang ----------------
+
+
     \section{Anhang}
 
     \subsection{SQL-Dump}
