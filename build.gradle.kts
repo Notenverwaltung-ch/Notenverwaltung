@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "ch.notenverwaltung"
-version = "25.0"
+version = "25.1"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
