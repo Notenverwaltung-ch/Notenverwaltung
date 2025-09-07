@@ -30,6 +30,34 @@ public class GradeService {
     }
 
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<GradeDTO> find(org.springframework.data.domain.Pageable pageable,
+                                                              java.util.UUID studentId,
+                                                              java.util.UUID testId,
+                                                              java.math.BigDecimal valueMin,
+                                                              java.math.BigDecimal valueMax,
+                                                              boolean isAdmin,
+                                                              String username) {
+        org.springframework.data.domain.Page<Grade> page;
+        if (studentId != null) {
+            page = gradeRepository.findByStudent_Id(studentId, pageable);
+        } else if (!isAdmin) {
+            java.util.UUID currentUserId = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found: " + username))
+                    .getId();
+            page = gradeRepository.findByStudent_Id(currentUserId, pageable);
+        } else {
+            page = gradeRepository.findAll(pageable);
+        }
+        java.util.List<GradeDTO> content = page.getContent().stream()
+                .filter(g -> testId == null || g.getTest().getId().equals(testId))
+                .filter(g -> valueMin == null || g.getValue().compareTo(valueMin) >= 0)
+                .filter(g -> valueMax == null || g.getValue().compareTo(valueMax) <= 0)
+                .map(this::toDTO)
+                .collect(java.util.stream.Collectors.toList());
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
     public GradeDTO getById(UUID id) {
         return gradeRepository.findById(id).map(this::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Grade not found with id: " + id));

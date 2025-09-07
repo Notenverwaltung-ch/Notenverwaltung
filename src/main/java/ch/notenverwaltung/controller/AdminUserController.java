@@ -74,7 +74,7 @@ public class AdminUserController {
                 ? Collections.singletonList("ROLE_USER")
                 : request.getRoles();
         if (userService.existsByUsername(request.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            throw new ch.notenverwaltung.exception.AlreadyExistsException("User with username '" + request.getUsername() + "' already exists");
         }
         User created = userService.createUser(request.getUsername(), request.getPassword(), roles);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);

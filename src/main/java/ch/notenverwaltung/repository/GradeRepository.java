@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface GradeRepository extends JpaRepository<Grade, UUID> {
+    org.springframework.data.domain.Page<Grade> findByStudent_Id(UUID studentId, org.springframework.data.domain.Pageable pageable);
 }

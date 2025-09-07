@@ -97,6 +97,15 @@ The project follows a standard layered architecture:
 - `PUT /api/tests/{id}` (ADMIN)
 - `DELETE /api/tests/{id}` (ADMIN)
 
+#### Grades
+- `GET /api/grades` (paged):
+  - Admins: all grades; supports optional filters: studentId, testId, valueMin, valueMax
+  - Users: only own grades
+- `GET /api/grades/{id}`: Admin any; Users only their own grade
+- `POST /api/grades` (ADMIN)
+- `PUT /api/grades/{id}` (ADMIN)
+- `DELETE /api/grades/{id}` (ADMIN)
+
 ## Authentication and Authorization
 
 The application supports two authentication methods and implements role-based access control.

@@ -41,6 +41,9 @@ public class SemesterSubjectService {
                 .orElseThrow(() -> new EntityNotFoundException("Semester not found with id: " + dto.getSemesterId()));
         Subject subject = subjectRepository.findById(dto.getSubjectId())
                 .orElseThrow(() -> new EntityNotFoundException("Subject not found with id: " + dto.getSubjectId()));
+        if (semesterSubjectRepository.existsBySemester_IdAndSubject_Id(dto.getSemesterId(), dto.getSubjectId())) {
+            throw new ch.notenverwaltung.exception.AlreadyExistsException("SemesterSubject for semester '" + dto.getSemesterId() + "' and subject '" + dto.getSubjectId() + "' already exists");
+        }
         SemesterSubject entity = SemesterSubject.builder().semester(semester).subject(subject).build();
         return toDTO(semesterSubjectRepository.save(entity));
     }

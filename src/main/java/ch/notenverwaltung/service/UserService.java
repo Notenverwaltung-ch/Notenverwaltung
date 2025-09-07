@@ -28,6 +28,23 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User createUserWithDetails(String username, String password, List<String> roles,
+                                      String firstName, String lastName, String email,
+                                      java.time.LocalDate dateOfBirth) {
+        List<String> normalized = normalizeRoles(roles);
+        User user = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .roles(normalized)
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(email)
+                .dateOfBirth(dateOfBirth)
+                .active(true)
+                .build();
+        return userRepository.save(user);
+    }
+
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
@@ -49,7 +66,9 @@ public class UserService {
     }
 
     public User createAdminUser(String password) {
-        return createUser("admin", password, Collections.singletonList("ROLE_ADMIN"));
+        User admin = createUser("admin", password, Collections.singletonList("ROLE_ADMIN"));
+        admin.setActive(true);
+        return userRepository.save(admin);
     }
 
     @Transactional
