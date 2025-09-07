@@ -132,7 +132,13 @@ public class TestdataController {
             Optional<SchoolClass> maybeExisting = schoolClassRepository.findAll().stream()
                     .filter(c -> c.getSemesterSubject().getId().equals(ss.getId()))
                     .findFirst();
-            SchoolClass sc = maybeExisting.orElseGet(() -> schoolClassRepository.save(SchoolClass.builder().semesterSubject(ss).build()));
+            SchoolClass sc = maybeExisting.orElseGet(() -> {
+                String className = ss.getSemester().getName() + " - " + ss.getSubject().getName();
+                return schoolClassRepository.save(SchoolClass.builder()
+                        .semesterSubject(ss)
+                        .name(className)
+                        .build());
+            });
             classes.add(sc);
         }
         summary.put("classesCount", classes.size());
