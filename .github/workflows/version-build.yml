@@ -246,7 +246,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: |
-            notenverwaltung-documentation-*
+            notenverwaltung-*
           path: artifacts
           merge-multiple: true
 
