@@ -63,7 +63,7 @@
     showstringspaces=false,
     tabsize=2,
     postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
-    literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {Ä}{{\"A}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {ß}{{\ss}}1 {é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {É}{{\'E}}1
+    literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {Ä}{{\"A}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {ss}{{\ss}}1 {é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {É}{{\'E}}1
 }
 
 % --- Helpers ---
@@ -136,6 +136,7 @@
     produktiv eingesetzte Frontend-Weboberfläche oder die Integration in bestehende Schulinfrastrukturen; der Fokus
     liegt auf der Backend-Funktionalität für Notenverwaltung.ch. Ein eigenständiges Frontend (z. B. mit Angular) ist
     im Rahmen dieser Arbeit nicht vorgesehen oder höchstens als sehr rudimentärer Prototyp zur Veranschaulichung der API gedacht.
+    \newpage
 
 % ---------------- Anforderungsanalyse ----------------
 
@@ -149,11 +150,10 @@
 
     \subsubsection{Funktionale Anforderungen}
     \begin{itemize}
-        \item Registrierung und Anmeldung von Nutzerinnen und Nutzern (STUDENT, optional TEACHER/ADMIN).
-        \item Selbstständige Verwaltung persönlicher Noten durch STUDENTs: Anlegen, Bearbeiten, Löschen von Tests/Noten im eigenen Bereich.
-        \item Einsicht in Notenverläufe, Berechnung von Durchschnittswerten und einfachen Auswertungen pro Fach/Semester.
+        \item Registrierung und Anmeldung von Nutzerinnen und Nutzern (USER, ADMIN).
+        \item Selbstständige Verwaltung persönlicher Noten durch Benutzer: Anlegen, Bearbeiten, Löschen von Tests/Noten im eigenen Bereich.
+        \item Berechnung von Durchschnittswerten und einfachen Auswertungen pro Fach/Semester.
         \item Rollenbasierter Zugriff auf REST-API-Endpunkte mit klar definierten Berechtigungen.
-        \item Export einfacher Auswertungen (z. B. CSV/JSON) über die API (optional).
         \item Fehlermeldungen und Validierungen (z. B. Pflichtfelder, Wertebereiche, Dublettenprüfung bei eindeutigen Attributen).
     \end{itemize}
 
@@ -174,15 +174,16 @@
 
     \begin{itemize}
         \item \textbf{Semester}: Zeitraum mit Start- und Enddatum, in dem Fächer angeboten werden.
-        \item \textbf{Fach (Subject)}: Lehrfach, das in Semestern angeboten wird.
+        \item \textbf{Fach}: Lehrfach, das in Semestern angeboten wird.
         \item \textbf{Klasse}: Gruppe von Studierenden, die ein Semesterfach besuchen.
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
-        \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
-        \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
-        \item \textbf{Rolle (UserRole-Elementsammlung)}: Rollen werden als Element-Collection in \code{user_roles} ohne eigene \code{roles}-Tabelle gespeichert (\code{USER}, \code{ADMIN}).
+        \item \textbf{Note}: Bewertung eines Tests für einen Studierenden.
+        \item \textbf{Benutzer}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
+        \item \textbf{Rolle}: Rollen werden als Element-Collection in \code{user_roles} ohne eigene \code{roles}-Tabelle gespeichert
+        \item (\code{USER}, \code{ADMIN}).
     \end{itemize}
 
-    Die Beziehungen:
+    \subsubsection{Beziehungen}
     \begin{itemize}
         \item Ein \textbf{Semester} hat mehrere \textbf{Semesterfächer}.
         \item Ein \textbf{Fach} kann in mehreren \textbf{Semestern} vorkommen.
@@ -190,7 +191,7 @@
         \item Eine \textbf{Klasse} hat mehrere \textbf{Tests}.
         \item Ein \textbf{Test} hat mehrere \textbf{Noten}.
         \item Ein \textbf{Benutzer} kann mehrere \textbf{Noten} haben.
-        \item Ein \textbf{Benutzer} kann mehrere Rollen haben.
+        \item Ein \textbf{Benutzer} kann mehrere \textbf{Rollen} haben.
     \end{itemize}
 
 % ---------------- Datenmodell ----------------
@@ -226,13 +227,13 @@
                     \node[entity, right=2.8cm of User] (UserRole) {\textbf{user\_roles}\\\footnotesize user\_id: uuid (FK)\\ role: varchar(50)};
 
                     % Relationships
-                    \draw[rel] (Semester) -- node[above, note]{1..*} (SemSub);
-                    \draw[rel] (SemSub) -- node[above, note]{*..1} (Subject);
-                    \draw[rel] (SemSub) -- node[left, note]{1..*} (Class);
-                    \draw[rel] (Class) -- node[above, note]{1..*} (Test);
-                    \draw[rel] (Test) -- node[above, note]{1..*} (Grade);
-                    \draw[rel] (User) -- node[right, note]{1..*} (Grade);
-                    \draw[rel] (User) -- node[above, note]{1..*} (UserRole);
+                    \draw[rel] (Semester) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (SemSub);
+                    \draw[rel] (Subject) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (SemSub);
+                    \draw[rel] (SemSub) -- node[pos=0.1, left, note]{1} node[pos=0.9, left, note]{m} (Class);
+                    \draw[rel] (Class) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (Test);
+                    \draw[rel] (Test) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (Grade);
+                    \draw[rel] (User) -- node[pos=0.05, right, note]{1} node[pos=0.95, right, note]{m} (Grade);
+                    \draw[rel] (User) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (UserRole);
                 \end{tikzpicture}
             }
             \caption{ER-Diagramm des Notenverwaltungssystems}
@@ -347,8 +348,7 @@
     \subsection{Architektur \/ Spring Boot Service}
     Die Anwendung ist als monolithischer Spring Boot Service aufgebaut und folgt einer klaren Schichtentrennung:
     \begin{itemize}
-        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects}, \newline
-        \item \code{/api/semesters}, \code{/api/classes}, \code{/api/tests}, \code{/api/admin/users})
+        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects})
         \item \textbf{Service-Schicht}: Kapselt Geschäftslogik, Transaktionen und Validierungen; orchestriert Zugriffe auf Repositories.
         \item \textbf{Repository-Schicht}: Spring Data JPA Repositories für CRUD-Operationen und abgeleitete/annotierte Queries.
         \item \textbf{Domain\/Model}: JPA-Entities (z. B. \code{Semester}, \code{Subject}, \code{Class}, \code{Test}, \code{Grade}, \code{User}) sowie eine Element-Collection \code{user_roles} für Rollen (keine separate \code{roles}-Tabelle).
@@ -376,107 +376,30 @@
     Passwörter werden mit BCrypt gehasht.
 
     \subsection{OpenAPI / Swagger}
-    Die REST-Schnittstellen sind mit OpenAPI beschrieben. Während der Entwicklung ist die UI typischerweise unter \code{/swagger-ui}
-    bzw. \code{/swagger-ui.html} erreichbar. Die Spezifikation (JSON\/YAML) ermöglicht die Generierung von Clients und dient der API-Dokumentation.
-    Endpunkte, Request\/Response-Schemata sowie Fehlercodes sind dort ersichtlich.
+    Die REST-Schnittstellen sind mit OpenAPI beschrieben. Während der Entwicklung ist die UI unter \code{/api/public/docs} erreichbar.
+    Die Spezifikation (JSON / YAML) ermöglicht die Generierung von Clients und dient der API-Dokumentation.
+    Endpunkte, Request / Response-Schemata sowie Fehlercodes sind dort ersichtlich. Die Swagger Dokumentation ist im Ordner \code{documentation/swagger} abgelegt.
 
 % ---------------- SQL-Implementierung ----------------
 
     \subsection{SQL-Implementierung}
+    In dieser Anwendung wird das Datenbankschema strikt mittels Flyway-Migrationen versioniert und aufgebaut.
+    Die DDL (CREATE TABLE, Constraints, Indizes) wird also über SQL-Skripte in den Flyway-Migrationsdateien gepflegt.
+    Dagegen sind die nachfolgenden INSERT- und SELECT-Beispiele als illustrative, vereinfachte SQLs zu verstehen:
+    In der produktiven Anwendung werden entsprechende Datenzugriffe hauptsächlich über Spring Data JPA Repositories
+    umgesetzt und nicht 1:1 mit diesen Roh-SQLs ausgeführt.
 
-    \subsection{CREATE TABLE Befehle}
-    \begin{lstlisting}[language=SQL]
--- Benutzer (Users)
-CREATE TABLE public.users (
-  id uuid PRIMARY KEY,
-  username varchar(100) UNIQUE NOT NULL,
-  password varchar(255) NOT NULL,
-  email varchar(255) UNIQUE,
-  first_name varchar(100),
-  last_name varchar(100),
-  date_of_birth date,
-  active boolean DEFAULT false,
-  created_at timestamp NOT NULL,
-  updated_at timestamp
-);
+    \subsubsection{Schema-Definitionen}
 
--- Rollen je Benutzer (Element-Collection)
-CREATE TABLE public.user_roles (
-  user_id uuid NOT NULL,
-  role varchar(50) NOT NULL,
-  PRIMARY KEY (user_id, role),
-  FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
+    Die folgenden Ausschnitte zeigen Auszüge aus der initialen Flyway-Migration. Weitere CREATE-Statements (inkl. Constraints)
+    befinden sich vollständig in folgendem Ordner: \\
+    \code{src/main/resources/db/migration}.
 
--- Fächer (Subjects)
-CREATE TABLE public.subjects (
-  id uuid PRIMARY KEY,
-  name varchar(150) NOT NULL
-);
--- Weitere Tabellen siehe Anhang
-    \end{lstlisting}
+    \lstinputlisting[language=SQL]{sql/schema_excerpt.sql}
 
-    \subsection{Beispielhafte INSERT-Befehle}
+    \subsubsection{Beispielhafte INSERT-Befehle}
     \noindent Die folgenden Inserts legen einige Beispiel-Datensätze an. Jede Gruppe ist nach Tabelle sortiert und kurz kommentiert.
-    \begin{lstlisting}[language=SQL]
--- Users: legt zwei Benutzer (Studierende) an, die sich anmelden können
-INSERT INTO users (id, username, password, email, first_name, last_name, active, created_at, updated_at)
-VALUES
-  (gen_random_uuid(), 'max',   '{bcrypt}$2a$10$abcdefghijklmnopqrstuv', 'max@uni.de',   'Max',   'Mustermann', true, now(), now()),
-  (gen_random_uuid(), 'erika', '{bcrypt}$2a$10$abcdefghijklmnopqrstuv', 'erika@uni.de', 'Erika', 'Musterfrau', true, now(), now());
-
--- User-Rollen: weist beiden die Rolle STUDENT zu
-INSERT INTO user_roles (user_id, role)
-SELECT u.id, 'STUDENT'
-FROM users u
-WHERE u.username IN ('max','erika');
-
--- Subjects: legt zwei Fächer an, auf die sich spätere Semester/Test-Daten beziehen
-INSERT INTO subjects (id, name)
-VALUES
-  (gen_random_uuid(), 'Mathematik'),
-  (gen_random_uuid(), 'Informatik');
-
--- Semesters: definiert einen Beispiel-Semester-Zeitraum
-INSERT INTO semesters (id, name, start_date, end_date)
-VALUES
-  (gen_random_uuid(), 'HS2025', '2025-09-01', '2026-01-31');
-
--- Semester_Subjects: ordnet Fächer einem Semester zu (eine Kombination pro Zeile)
--- Zweck: bildet die Lehrangebote in einem Semester ab
-INSERT INTO semester_subjects (id, semester_id, subject_id)
-SELECT gen_random_uuid(), s.id, sub.id
-FROM semesters s CROSS JOIN subjects sub
-WHERE s.name = 'HS2025' AND sub.name IN ('Mathematik','Informatik');
-
--- Classes: legt eine Klasse für Mathematik und eine für Informatik im Semester HS2025 an
-INSERT INTO classes (id, semester_subject_id, name)
-SELECT gen_random_uuid(), ss.id, n
-FROM (
-  SELECT 'Mathematik' AS sub_name, 'Klasse M-1' AS n UNION ALL
-  SELECT 'Informatik',               'Klasse I-1'
-) x
-JOIN subjects sub ON sub.name = x.sub_name
-JOIN semesters sem ON sem.name = 'HS2025'
-JOIN semester_subjects ss ON ss.subject_id = sub.id AND ss.semester_id = sem.id;
-
--- Tests: legt je einen Test pro Klasse an (z. B. erste Prüfung)
-INSERT INTO tests (id, name, class_id, semester_subject_id, date)
-SELECT gen_random_uuid(), CONCAT(sub.name, ' Test 1'), c.id, ss.id, '2025-10-15'
-FROM classes c
-JOIN semester_subjects ss ON ss.id = c.semester_subject_id
-JOIN subjects sub ON sub.id = ss.subject_id;
-
--- Grades: vergibt Beispielnoten für max und erika auf die angelegten Tests
-INSERT INTO grades (id, value, weight, user_id, test_id, comment)
-SELECT gen_random_uuid(), v.value, 50.00, u.id, t.id, v.cmt
-FROM (
-  SELECT 'max' AS uname,   5.50::numeric(4,2) AS value, 'Erste Prüfung'::varchar(255) AS cmt UNION ALL
-  SELECT 'erika',           4.75::numeric(4,2),         'Erste Prüfung'
-) v
-JOIN users u ON u.username = v.uname
-JOIN tests t ON t.name LIKE '% Test 1';
-    \end{lstlisting}
+    \lstinputlisting[language=SQL]{sql/inserts_examples.sql}
 
     \textit{Erläuterung:}
     \begin{itemize}
@@ -491,125 +414,26 @@ JOIN tests t ON t.name LIKE '% Test 1';
 
 % ---------------- Beispielabfragen ----------------
 
-    \subsection{Beispielabfragen / UI}
+    \subsubsection{Beispielhafte SELECT-Befehle}
+    Die folgenden SELECT-Beispiele sind didaktisch und werden in der Anwendung so nicht direkt ausgeführt. In der Praxis übernimmt die Repository-Schicht (Spring Data JPA) die Abfragen.
+    \lstinputlisting[language=SQL]{sql/selects_examples.sql}
 
-    \subsection{SQL-Abfragen}
-    \begin{lstlisting}[language=SQL]
--- 1) Alle Noten eines Benutzers (Student) anhand des Usernamens
-SELECT u.first_name, u.last_name, g.value, t.name AS test_name, sub.name AS subject, sem.name AS semester
-FROM grades g
-JOIN users u ON g.student_id = u.id
-JOIN tests t ON g.test_id = t.id
-JOIN semester_subjects ss ON t.semester_subject_id = ss.id
-JOIN subjects sub ON ss.subject_id = sub.id
-JOIN semesters sem ON ss.semester_id = sem.id
-WHERE u.username = 'max'
-ORDER BY sem.start_date, sub.name, t.date;
-
--- 2) Alle Tests in einem bestimmten Semester, gruppiert nach Benutzer (nur Tests, Note optional)
-SELECT sem.name AS semester,
-       u.username,
-       u.first_name,
-       u.last_name,
-       sub.name      AS subject,
-       c.name        AS class,
-       t.name        AS test_name,
-       t.date        AS test_date,
-       g.value       AS grade
-FROM semesters sem
-JOIN semester_subjects ss ON ss.semester_id = sem.id
-JOIN subjects sub ON sub.id = ss.subject_id
-JOIN classes c ON c.semester_subject_id = ss.id
-JOIN tests t ON t.class_id = c.id
-LEFT JOIN grades g ON g.test_id = t.id
-LEFT JOIN users u ON u.id = g.student_id
-WHERE sem.name = 'SEM-1-2025'
-ORDER BY u.username NULLS LAST, sub.name, t.date;
-
--- 3) Alle Tests eines Semesters mit Durchschnittsnote pro Test
-SELECT sem.name AS semester,
-       sub.name AS subject,
-       t.name   AS test_name,
-       t.date,
-       ROUND(AVG(g.value), 2) AS avg_grade,
-       COUNT(g.id) AS grades_count
-FROM tests t
-JOIN classes c ON c.id = t.class_id
-JOIN semester_subjects ss ON ss.id = c.semester_subject_id
-JOIN semesters sem ON sem.id = ss.semester_id
-JOIN subjects sub ON sub.id = ss.subject_id
-LEFT JOIN grades g ON g.test_id = t.id
-WHERE sem.name = 'SEM-1-2025'
-GROUP BY sem.name, sub.name, t.name, t.date
-ORDER BY sub.name, t.date;
-
--- 4) Notenübersicht je Benutzer und Fach in einem Semester (Pivot-ähnlich)
-SELECT u.username,
-       sub.name AS subject,
-       ROUND(AVG(g.value), 2) AS avg_grade_subject
-FROM users u
-JOIN grades g ON g.student_id = u.id
-JOIN tests t ON t.id = g.test_id
-JOIN classes c ON c.id = t.class_id
-JOIN semester_subjects ss ON ss.id = c.semester_subject_id
-JOIN subjects sub ON sub.id = ss.subject_id
-JOIN semesters sem ON sem.id = ss.semester_id
-WHERE sem.name = 'SEM-1-2025'
-GROUP BY u.username, sub.name
-ORDER BY u.username, sub.name;
-
--- 5) Fehlende Bewertungen: Tests ohne Note je Benutzer (zeigt offene Bewertungen)
-SELECT u.username,
-       sub.name AS subject,
-       t.name   AS test_name,
-       t.date   AS test_date
-FROM users u
-JOIN semesters sem ON sem.name = 'SEM-1-2025'
-JOIN semester_subjects ss ON ss.semester_id = sem.id
-JOIN subjects sub ON sub.id = ss.subject_id
-JOIN classes c ON c.semester_subject_id = ss.id
-JOIN tests t ON t.class_id = c.id
-LEFT JOIN grades g ON g.test_id = t.id AND g.student_id = u.id
-WHERE g.id IS NULL
-ORDER BY u.username, sub.name, t.date;
-
--- 6) Rangliste pro Test (beste zuerst) inkl. Semester
-SELECT sem.name AS semester,
-       t.name   AS test_name,
-       u.username,
-       g.value  AS grade
-FROM grades g
-JOIN tests t ON t.id = g.test_id
-JOIN users u ON u.id = g.student_id
-JOIN classes c ON c.id = t.class_id
-JOIN semester_subjects ss ON ss.id = c.semester_subject_id
-JOIN semesters sem ON sem.id = ss.semester_id
-WHERE t.name LIKE '%Test 1%'
-ORDER BY sem.name, t.name, g.value DESC NULLS LAST;
-
--- 7) Workload je Fach im Semester: Anzahl Klassen, Tests, Bewertungen
-WITH test_counts AS (
-  SELECT ss.id,
-         COUNT(DISTINCT c.id) AS classes_cnt,
-         COUNT(DISTINCT t.id) AS tests_cnt,
-         COUNT(g.id)          AS grades_cnt
-  FROM semester_subjects ss
-  LEFT JOIN classes c ON c.semester_subject_id = ss.id
-  LEFT JOIN tests t   ON t.class_id = c.id
-  LEFT JOIN grades g  ON g.test_id = t.id
-  GROUP BY ss.id
-)
-SELECT sem.name AS semester,
-       sub.name AS subject,
-       tc.classes_cnt,
-       tc.tests_cnt,
-       tc.grades_cnt
-FROM test_counts tc
-JOIN semester_subjects ss ON ss.id = tc.id
-JOIN semesters sem ON sem.id = ss.semester_id
-JOIN subjects sub ON sub.id = ss.subject_id
-WHERE sem.name = 'SEM-1-2025'
-ORDER BY sub.name;
+    \subsubsection{Beispielhafte Hibernate Query}
+    Abschliessend ein konkretes Beispiel, wie eine solche Abfrage in der Anwendung über ein Repository umgesetzt ist.
+    Die Methode liefert die Noten eines Semesters (optional gefiltert nach Student) als DTO:
+    \begin{lstlisting}[language=Java]
+    @Query("select new ch.notenverwaltung.model.dto.SemesterGradeRow(" +
+            " g.id, u.id, u.firstName, u.lastName, subj.id, subj.name, t.id, t.name, t.date, g.value, g.weight, g.comment) " +
+            " from Grade g " +
+            " join g.student u " +
+            " left join g.test t " +
+            " left join t.semesterSubject ss " +
+            " left join ss.subject subj " +
+            " left join ss.semester sem " +
+            " where sem.id = :semesterId " +
+            " and ( u.id = COALESCE(:studentId, u.id) )")
+    List<SemesterGradeRow> findSemesterGrades(@Param("semesterId") UUID semesterId,
+                                              @Param("studentId") UUID studentId);
     \end{lstlisting}
 
     \textbf{Beispielausgabe (Auszug):}\\
@@ -671,7 +495,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Request ohne Pflichtfelder \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
             Endpoint/Schritte & \code{POST /api/admin/users} (ungültiger Body) \\ \hline
             Response (gekürzt) & \code{400 Bad Request} mit Validierungsfehlern \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
@@ -689,7 +513,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Keine \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
             Endpoint/Schritte & \code{INSERT}/\code{POST} Semester $\rightarrow$ anschliessend \code{GET /api/semesters} \\ \hline
             Response (gekürzt) & \code{201 Created}; Objekt in GET-Liste vorhanden \\ \hline
             Post-Conditions & Semester existiert \\ \hline
@@ -707,7 +531,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Subject mit \code{name=Mathematik} existiert bereits \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Subject mit \code{name=Mathematik} existiert bereits \\ \hline
             Endpoint/Schritte & \code{POST /api/subjects} mit Body \code{\{name:"Mathematik"\}} \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400 Bad Request} mit Fehlermeldung \\ \hline
             Post-Conditions & Kein weiteres Subject mit gleichem Namen \\ \hline
@@ -725,7 +549,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Semester \code{HS2025} und Subject \code{Mathematik} existieren \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Semester \code{HS2025} und Subject \code{Mathematik} existieren \\ \hline
             Endpoint/Schritte & \code{POST /api/semester-subjects} mit \code{\{semesterId, subjectId\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Objekt enth\"alt IDs \\ \hline
             Post-Conditions & Datensatz in \code{semester_subjects} existiert \\ \hline
@@ -743,7 +567,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Zuordnung Semester \code{HS2025} + \code{Mathematik} existiert \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Zuordnung Semester \code{HS2025} + \code{Mathematik} existiert \\ \hline
             Endpoint/Schritte & Erneuter \code{POST /api/semester-subjects} mit derselben Kombination \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehler \\ \hline
             Post-Conditions & Kein zweiter Datensatz angelegt \\ \hline
@@ -761,7 +585,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & \code{semester_subjects}-Datensatz vorhanden \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und \code{semester_subjects}-Datensatz vorhanden \\ \hline
             Endpoint/Schritte & \code{POST /api/classes} mit \code{\{semesterSubjectId, name\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Klasse enth\"alt \code{semesterSubjectId} \\ \hline
             Post-Conditions & Datensatz in \code{classes} existiert \\ \hline
@@ -779,7 +603,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Klasse existiert \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Klasse existiert \\ \hline
             Endpoint/Schritte & \code{POST /api/tests} mit \code{\{classId, semesterSubjectId, name, date\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Test enth\"alt \code{classId, semesterSubjectId} \\ \hline
             Post-Conditions & Datensatz in \code{tests} existiert \\ \hline
@@ -797,7 +621,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Test und User existieren \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Test und User existieren \\ \hline
             Endpoint/Schritte & \code{POST /api/grades} mit \code{\{userId, testId, value\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{userId, testId, value} \\ \hline
             Post-Conditions & Datensatz in \code{grades} existiert \\ \hline
@@ -815,7 +639,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Grade für (\code{userId}, \code{testId}) existiert bereits \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Grade für (\code{userId}, \code{testId}) existiert bereits \\ \hline
             Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{userId+testId} \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehlermeldung \\ \hline
             Post-Conditions & Kein zweiter Datensatz für gleiche Kombination \\ \hline
@@ -833,7 +657,7 @@ ORDER BY sub.name;
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Gültiger JWT-Token vorhanden \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
             Endpoint/Schritte & \code{GET /api/semesters} mit \code{Authorization: Bearer <token>} \\ \hline
             Response (gekürzt) & \code{200 OK}; Seite mit Semestern \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
@@ -913,9 +737,13 @@ ORDER BY sub.name;
         \end{tabularx}
     \end{small}
     \subsection{Testdaten}
-    In diesem Repository stehen zwei HTTP-Dateien zur Verf\"ugung, mit denen sich die Testdaten einfach vorbereiten und alle Testf\"alle ausf\"uhren lassen: \code{testdata-setup.http} und \code{testcase.http}.\newline
-    Beide Dateien liegen im Projektwurzelverzeichnis (relative Pfade: \code{./testdata-setup.http} und \code{./testcase.http}). F\"uhren Sie zun\"achst \code{testdata-setup.http} aus, um die Basisdaten (z.\,B. Semester, Subject, Zuordnung, Klasse, Test) anzulegen; anschliessend k\"onnen die einzelnen Testf\"alle direkt \"uber \code{testcase.http} gegen die laufende Anwendung ausgef\"uhrt werden.\newline
-    Die Requests sind so vorbereitet, dass sie mit dem JetBrains HTTP Client (IDE) sofort lauff\"ahig sind und Token/IDs automatisch in der Session hinterlegt werden.
+    In diesem Repository stehen zwei HTTP-Dateien zur Verf\"ugung, mit denen sich die Testdaten einfach vorbereiten und alle
+    Testf\"alle ausf\"uhren lassen: \code{documentation/testcases}.\newline
+    F\"uhre zun\"achst \code{testdata-setup.http} aus, um die Basisdaten (z.\,B. Semester, Subject, Zuordnung, Klasse, Test)
+    anzulegen; anschliessend k\"onnen die einzelnen Testf\"alle direkt \"uber \code{testcase.http} gegen die laufende Anwendung
+    ausgef\"uhrt werden.\newline
+    Die Requests sind so vorbereitet, dass sie mit dem JetBrains HTTP Client (IDE) sofort lauff\"ahig sind und Token/IDs automatisch
+    in der Session hinterlegt werden.
     
 
     \newpage
@@ -956,7 +784,7 @@ ORDER BY sub.name;
     Ein weiterer wichtiger Punkt war die Erstellung der CI/CD-Pipeline zur automatischen PDF-Generierung.
     Diese Phase war zuweilen recht anstrengend: Von der korrekten Einrichtung der \LaTeX{}-Toolchain in
     der Build-Umgebung über Paketabhängigkeiten bis hin zu Pfad- und Encoding-Themen gab es einige
-    Hürden. Nachdem alle Stolpersteine beseitigt waren, konnte die Pipeline schließlich zuverlässig die
+    Hürden. Nachdem alle Stolpersteine beseitigt waren, konnte die Pipeline schliesslich zuverlässig die
     PDF-Dokumentation bauen – ein Ergebnis, das den Aufwand nachhaltig rechtfertigt und die Wartbarkeit
     in Zukunft deutlich verbessert.
 % ---------------- Anhang ----------------
@@ -973,9 +801,11 @@ ORDER BY sub.name;
 pg_dump -h localhost -p 5432 -U postgres -d notenverwaltung -F p -f documentation/dump/backup_nv_final.sql
     \end{lstlisting}
 
+    \subsubsection{SQL Schema}
+    Das vollständige CREATE-Skript (Flyway Migrationen) ist im Ordner\\ \code{src/main/resources/db/migration/} zu finden.
+
     \subsection{OpenAPI Dokumentation}
-    Die vollständige OpenAPI/Swagger-Dokumentation der REST-API befindet sich im Ordner \code{documentation/swagger/}
-    (\code{documentation/swagger/documentation.json}).
+    Die vollständige OpenAPI/Swagger-Dokumentation der REST-API befindet sich im Ordner \code{documentation/swagger/documentation.json}.
     Swagger-UI ist unter \code{/api/public/docs} erreichbar.
 
     \subsection{Sourcecode und Release}
