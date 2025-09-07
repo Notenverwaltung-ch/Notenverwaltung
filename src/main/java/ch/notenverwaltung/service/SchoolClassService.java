@@ -41,7 +41,10 @@ public class SchoolClassService {
     public ClassDTO create(ClassDTO dto) {
         SemesterSubject ss = semesterSubjectRepository.findById(dto.getSemesterSubjectId())
                 .orElseThrow(() -> new EntityNotFoundException("SemesterSubject not found with id: " + dto.getSemesterSubjectId()));
-        SchoolClass entity = SchoolClass.builder().semesterSubject(ss).build();
+        SchoolClass entity = SchoolClass.builder()
+                .semesterSubject(ss)
+                .name(dto.getName())
+                .build();
         return toDTO(schoolClassRepository.save(entity));
     }
 
@@ -52,6 +55,7 @@ public class SchoolClassService {
         SemesterSubject ss = semesterSubjectRepository.findById(dto.getSemesterSubjectId())
                 .orElseThrow(() -> new EntityNotFoundException("SemesterSubject not found with id: " + dto.getSemesterSubjectId()));
         entity.setSemesterSubject(ss);
+        entity.setName(dto.getName());
         return toDTO(schoolClassRepository.save(entity));
     }
 
@@ -67,6 +71,7 @@ public class SchoolClassService {
         return ClassDTO.builder()
                 .id(c.getId())
                 .semesterSubjectId(c.getSemesterSubject().getId())
+                .name(c.getName())
                 .build();
     }
 }

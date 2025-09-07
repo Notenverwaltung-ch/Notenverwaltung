@@ -9,16 +9,6 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-### get all students (paged)
-
-GET http://localhost:8080/api/students?page=0&size=20
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### get active students (paged)
-GET http://localhost:8080/api/students/active?page=0&size=20
-Authorization: Bearer {{token}}
-Content-Type: application/json
 
 ### admin: create user
 POST http://localhost:8080/api/admin/users
@@ -108,3 +98,13 @@ DELETE http://localhost:8080/api/tests/{{testId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
+
+### grades: semester aggregation (admin)
+GET http://localhost:8080/api/grades/semester?semesterId={{semesterId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### grades: semester aggregation for one student (admin)
+GET http://localhost:8080/api/grades/semester?semesterId={{semesterId}}&studentId={{studentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json

@@ -23,11 +23,14 @@ public class Grade {
     @Column(nullable = false, precision = 5, scale = 2)
     private BigDecimal weight;
 
+    @Column(name = "comment", nullable = true, length = 255)
+    private String comment;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "test_id", nullable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "test_id", nullable = true)
     private TestEntity test;
 }
