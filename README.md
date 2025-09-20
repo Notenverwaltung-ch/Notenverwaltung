@@ -223,3 +223,11 @@ This separation ensures that internal implementation details are not exposed thr
 3. Follow RESTful API design principles
 4. Write unit tests for services and controllers
 5. Document all public APIs
+
+
+## License
+This project is licensed under the Creative Commons Attribution–NonCommercial 4.0 International (CC BY-NC 4.0) License.  
+You are free to use, share, and modify this code for non-commercial purposes, with attribution.  
+For commercial licensing, please contact the author.
+
+Full text: https://creativecommons.org/licenses/by-nc/4.0/

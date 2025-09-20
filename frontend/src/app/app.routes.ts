@@ -32,5 +32,9 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./components/users/users.component').then(m => m.UsersComponent)
   },
+  {
+    path: 'impressum',
+    loadComponent: () => import('./components/impressum/impressum.component').then(m => m.ImpressumComponent)
+  },
   {path: '**', redirectTo: 'welcome'}
 ];

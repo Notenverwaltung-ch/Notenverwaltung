@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "Notenverwaltung API",
                 version = "v1",
-                description = "API for authentication and managing users, semesters, subjects, classes and tests. Most endpoints require a Bearer JWT. Public endpoints are under /public and /public/auth. Swagger UI is available at /api/public/docs."
+                description = "API for authentication and managing users, semesters, subjects, classes and tests. Most endpoints require a Bearer JWT. Public endpoints are under /public and /public/auth."
         ),
         security = {
                 @SecurityRequirement(name = "bearerAuth")

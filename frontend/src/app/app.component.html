@@ -22,3 +22,15 @@
 <main class="main">
   <router-outlet/>
 </main>
+<footer class="footer">
+  <div class="footer__content">
+    <div class="footer__left">
+      <a routerLink="/impressum">Impressum</a>
+      <span>© 2025 Notenverwaltung.ch</span>
+    </div>
+    <div class="footer__right">
+      <a href="https://github.com/Notenverwaltung-ch/Notenverwaltung" target="_blank" rel="noopener">GitHub Projekt</a>
+      <a [href]="swaggerUrl()" target="_blank" rel="noopener">Swagger Dokumentation</a>
+    </div>
+  </div>
+</footer>

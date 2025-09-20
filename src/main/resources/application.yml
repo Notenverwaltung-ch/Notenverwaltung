@@ -28,6 +28,10 @@ spring:
     secret: ${JWT_SECRET:defaultSecretKeyForProductionOverride}
     expiration: ${JWT_EXPIRATION:86400000}
 
+springdoc:
+  swagger-ui:
+    path: /public/docs
+
 logging:
   level:
     root: INFO
