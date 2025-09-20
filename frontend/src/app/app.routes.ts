@@ -7,7 +7,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'register', loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent) },
   { path: 'access', loadComponent: () => import('./components/access-prompt/access-prompt.component').then(m => m.AccessPromptComponent) },
-  { path: 'home', canActivate: [authGuard], loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent) },
+  { path: 'home', redirectTo: 'welcome', pathMatch: 'full' },
   { path: 'grades', canActivate: [authGuard], loadComponent: () => import('./components/grades/grades.component').then(m => m.GradesComponent) },
   { path: '**', redirectTo: 'welcome' }
 ];

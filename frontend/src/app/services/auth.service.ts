@@ -108,6 +108,33 @@ export class AuthService {
     return username ?? null;
   }
 
+  getRoles(): string[] {
+    const token = this.getToken();
+    if (!token) return [];
+    const payload = this.decodeJwt(token);
+    if (!payload) return [];
+    const roles = payload['roles'];
+    if (Array.isArray(roles)) {
+      return roles.map(r => String(r));
+    }
+    if (typeof roles === 'string') return [roles];
+    return [];
+  }
+
+  hasRole(role: string): boolean {
+    return this.getRoles().includes(role);
+  }
+
+  isAdmin(): boolean {
+    const roles = this.getRoles();
+    return roles.includes('ROLE_ADMIN') || roles.includes('ADMIN');
+  }
+
+  isUser(): boolean {
+    const roles = this.getRoles();
+    return roles.includes('ROLE_USER') || roles.includes('USER');
+  }
+
   private decodeJwt(token: string): Record<string, unknown> | null {
     try {
       const parts = token.split('.');

@@ -199,6 +199,7 @@ public class GradeService {
                 .comment(g.getComment())
                 .studentId(g.getStudent().getId())
                 .testId(g.getTest() != null ? g.getTest().getId() : null)
+                .createdOn(g.getCreatedOn())
                 .build();
     }
 
@@ -233,11 +234,13 @@ public class GradeService {
 
     private ch.notenverwaltung.model.dto.GradeViewDTO toViewDTO(Grade g) {
         return ch.notenverwaltung.model.dto.GradeViewDTO.builder()
+                .id(g.getId())
                 .value(g.getValue())
                 .weight(g.getWeight())
                 .comment(g.getComment())
                 .studentUsername(g.getStudent() != null ? g.getStudent().getUsername() : null)
                 .testName(g.getTest() != null ? g.getTest().getName() : null)
+                .createdOn(g.getCreatedOn())
                 .build();
     }
 }

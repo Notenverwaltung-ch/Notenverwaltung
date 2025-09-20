@@ -1,9 +1,11 @@
 package ch.notenverwaltung.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -33,4 +35,16 @@ public class Grade {
     @ManyToOne(optional = true)
     @JoinColumn(name = "test_id", nullable = true)
     private TestEntity test;
+
+    @Column(name = "created_on", nullable = false)
+    @Setter(AccessLevel.NONE)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private LocalDateTime createdOn;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.createdOn == null) {
+            this.createdOn = LocalDateTime.now();
+        }
+    }
 }

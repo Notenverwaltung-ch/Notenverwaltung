@@ -31,11 +31,11 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/home']);
+        this.router.navigate(['/welcome']);
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message || 'Login failed. Please check your credentials.';
+        this.error = err?.error?.message || 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.';
       }
     });
   }

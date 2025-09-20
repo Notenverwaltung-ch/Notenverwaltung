@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angu
 import { GradeService, GradeDTO, Page, GradeViewDTO } from '../../services/grade.service';
 import { AdminUserService, UserDTO } from '../../services/admin-user.service';
 import { TestService, TestDTO as TestItemDTO } from '../../services/test.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'nv-grades',
@@ -17,6 +18,7 @@ export class GradesComponent implements OnInit {
   private grades = inject(GradeService);
   private users = inject(AdminUserService);
   private tests = inject(TestService);
+  private auth = inject(AuthService);
 
   page: Page<GradeViewDTO> | null = null;
   pageIndex = 0;
@@ -25,6 +27,10 @@ export class GradesComponent implements OnInit {
   sortDir: 'asc' | 'desc' = 'asc';
   loading = false;
   listError: string | null = null;
+
+  isAdmin: boolean | null = null;
+  currentUsername: string | null = null;
+  showOnlyOwn = false;
 
   form = this.fb.nonNullable.group({
     studentId: ['', Validators.required],
@@ -44,21 +50,42 @@ export class GradesComponent implements OnInit {
   optionsError: string | null = null;
 
   ngOnInit(): void {
+    this.isAdmin = this.auth.isAdmin();
+    this.currentUsername = this.auth.getUsername();
     this.loadOptions();
-    this.load();
   }
 
   private loadOptions(): void {
     this.optionsLoading = true;
     this.optionsError = null;
-    // Load active users (students) and tests
-    this.users.listActive(0, 1000, 'username', 'asc').subscribe({
-      next: (p) => { this.students = p.content; this.optionsLoading = false; },
-      error: (err) => { this.optionsLoading = false; this.optionsError = err?.error?.message ?? 'Failed to load users'; }
-    });
+
+    if (this.isAdmin) {
+      this.users.listActive(0, 1000, 'username', 'asc').subscribe({
+        next: (p) => {
+          this.students = p.content;
+          this.optionsLoading = false;
+          this.form.controls.studentId.addValidators(Validators.required);
+          this.form.controls.studentId.updateValueAndValidity();
+          this.load();
+        },
+        error: (err) => {
+          this.isAdmin = false;
+          this.optionsLoading = false;
+          this.form.controls.studentId.clearValidators();
+          this.form.controls.studentId.updateValueAndValidity();
+          this.load();
+        }
+      });
+    } else {
+      this.optionsLoading = false;
+      this.form.controls.studentId.clearValidators();
+      this.form.controls.studentId.updateValueAndValidity();
+      this.load();
+    }
+
     this.tests.list(0, 1000, 'name', 'asc').subscribe({
       next: (p) => { this.testsList = p.content; },
-      error: (err) => { this.optionsError = err?.error?.message ?? 'Failed to load tests'; }
+      error: (err) => { this.optionsError = err?.error?.message ?? 'Laden der Tests fehlgeschlagen'; }
     });
   }
 
@@ -66,9 +93,11 @@ export class GradesComponent implements OnInit {
     this.loading = true;
     this.listError = null;
     const sortArg = this.sortField ? { field: this.sortField, dir: this.sortDir } as const : undefined;
-    this.grades.listView(this.pageIndex, this.size, sortArg as any).subscribe({
+    const caller = (this.isAdmin && this.showOnlyOwn) ? this.grades.listViewOwn(this.pageIndex, this.size, sortArg as any)
+                  : this.grades.listView(this.pageIndex, this.size, sortArg as any);
+    caller.subscribe({
       next: (p) => { this.page = p; this.loading = false; },
-      error: (err) => { this.listError = err?.error?.message ?? 'Failed to load grades'; this.loading = false; }
+      error: (err) => { this.listError = err?.error?.message ?? 'Laden der Noten fehlgeschlagen'; this.loading = false; }
     });
   }
 
@@ -101,26 +130,35 @@ export class GradesComponent implements OnInit {
     this.adding = true;
     this.error = null; this.success = null;
     const dto = this.form.getRawValue();
-    const payload: GradeDTO = { ...dto, testId: dto.testId ? dto.testId : undefined } as any;
+    const base: any = { testId: dto.testId ? dto.testId : undefined, value: dto.value, weight: dto.weight, comment: dto.comment };
+    const payload: GradeDTO = this.isAdmin ? { ...base, studentId: dto.studentId } : { ...base, studentId: '' as any };
     this.grades.create(payload).subscribe({
       next: () => {
         this.adding = false;
-        this.success = 'Grade added';
+        this.success = 'Note hinzugefügt';
         this.form.reset({ studentId: '', testId: '', value: 0, weight: 1, comment: '' });
         this.pageIndex = 0;
         this.load();
       },
-      error: (err) => { this.adding = false; this.error = err?.error?.message ?? 'Failed to add grade'; }
+      error: (err) => { this.adding = false; this.error = err?.error?.message ?? 'Hinzufügen der Note fehlgeschlagen'; }
     });
   }
 
-  onDelete(g: GradeDTO) {
+  onDelete(g: GradeViewDTO) {
     if (!g.id) return;
-    if (!confirm('Delete this grade?')) return;
+    if (!confirm('Diese Note löschen?')) return;
     this.deletingId = g.id;
     this.grades.delete(g.id).subscribe({
       next: () => { this.deletingId = null; this.load(); },
-      error: () => { this.deletingId = null; alert('Failed to delete'); }
+      error: (err) => {
+        this.deletingId = null;
+        const msg = err?.status === 403 ? 'Du kannst nur deine eigenen Noten löschen.' : 'Löschen fehlgeschlagen';
+        alert(msg);
+      }
     });
+  }
+
+  isOwner(g: GradeViewDTO): boolean {
+    return !!g.studentUsername && !!this.currentUsername && g.studentUsername === this.currentUsername;
   }
 }

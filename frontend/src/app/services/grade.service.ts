@@ -10,15 +10,18 @@ export interface GradeDTO {
   weight?: number;
   comment?: string;
   studentId: string;
-  testId?: string; // optional
+  testId?: string;
+  createdOn?: string;
 }
 
 export interface GradeViewDTO {
+  id?: string;
   value: number;
   weight?: number;
   comment?: string;
   studentUsername?: string;
   testName?: string;
+  createdOn?: string;
 }
 
 export interface Page<T> {
@@ -57,6 +60,14 @@ export class GradeService {
       params = params.append('sort', `${sort.field},${sort.dir ?? 'asc'}`);
     }
     return this.http.get<Page<GradeViewDTO>>(`${this.baseUrl}/grades/view`, { headers: this.authHeaders(), params });
+  }
+
+  listViewOwn(page = 0, size = 10, sort?: { field: string; dir: 'asc' | 'desc' }): Observable<Page<GradeViewDTO>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (sort?.field) {
+      params = params.append('sort', `${sort.field},${sort.dir ?? 'asc'}`);
+    }
+    return this.http.get<Page<GradeViewDTO>>(`${this.baseUrl}/grades/view/own`, { headers: this.authHeaders(), params });
   }
 
   create(dto: GradeDTO): Observable<GradeDTO> {

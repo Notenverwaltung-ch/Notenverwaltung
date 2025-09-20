@@ -1,37 +1,42 @@
 <div class="container">
-  <h1>Grades</h1>
+  <h1>Noten</h1>
 
   <section class="card">
-    <h2>Add Grade</h2>
+    <h2>Note hinzufügen</h2>
     <form [formGroup]="form" (ngSubmit)="onAdd()" class="grid">
-      <label>
-        <span>Student*</span>
-        <select formControlName="studentId" [disabled]="optionsLoading || adding" required>
-          <option value="" disabled>Select student</option>
-          <option *ngFor="let s of students" [value]="s.id">{{ s.username }}</option>
-        </select>
-      </label>
+      <ng-container *ngIf="isAdmin; else noStudentSelection">
+        <label>
+          <span>Schüler*</span>
+          <select formControlName="studentId" [disabled]="optionsLoading || adding">
+            <option value="" disabled>Schüler auswählen</option>
+            <option *ngFor="let s of students" [value]="s.id">{{ s.username }}</option>
+          </select>
+        </label>
+      </ng-container>
+      <ng-template #noStudentSelection>
+        <div class="info col-span-2">Note für dein eigenes Konto hinzufügen</div>
+      </ng-template>
       <label>
         <span>Test</span>
         <select formControlName="testId" [disabled]="optionsLoading || adding">
-          <option value="">No test</option>
+          <option value="">Kein Test</option>
           <option *ngFor="let t of testsList" [value]="t.id">{{ t.name }}</option>
         </select>
       </label>
       <label>
-        <span>Value*</span>
+        <span>Wert*</span>
         <input type="number" step="0.01" formControlName="value" required />
       </label>
       <label>
-        <span>Weight*</span>
+        <span>Gewichtung*</span>
         <input type="number" step="0.01" formControlName="weight" />
       </label>
       <label class="col-span-2">
-        <span>Comment*</span>
+        <span>Bemerkung</span>
         <input formControlName="comment" />
       </label>
       <div class="actions col-span-2">
-        <button class="btn" type="submit" [disabled]="form.invalid || adding">{{ adding ? 'Adding...' : 'Add' }}</button>
+        <button class="btn" type="submit" [disabled]="form.invalid || adding">{{ adding ? 'Wird hinzugefügt...' : 'Hinzufügen' }}</button>
       </div>
     </form>
     <p class="error" *ngIf="error">{{ error }}</p>
@@ -41,9 +46,12 @@
 
   <section class="card">
     <div class="card-header">
-      <h2>Grades List</h2>
+      <h2>Notenliste</h2>
       <div class="spacer"></div>
-      <label>Page Size
+      <label *ngIf="isAdmin">
+        <input type="checkbox" [(ngModel)]="showOnlyOwn" (change)="pageIndex=0; load()" /> Nur eigene anzeigen
+      </label>
+      <label>Seitengrösse
         <select [(ngModel)]="size" (change)="pageIndex=0; load()">
           <option [value]="5">5</option>
           <option [value]="10">10</option>
@@ -58,20 +66,24 @@
       <thead>
       <tr>
         <th class="sortable" (click)="toggleSort('value')">
-          Value <span class="sort-indicator" *ngIf="sortField==='value'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Wert <span class="sort-indicator" *ngIf="sortField==='value'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('weight')">
-          Weight <span class="sort-indicator" *ngIf="sortField==='weight'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Gewichtung <span class="sort-indicator" *ngIf="sortField==='weight'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('comment')">
-          Comment <span class="sort-indicator" *ngIf="sortField==='comment'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Bemerkung <span class="sort-indicator" *ngIf="sortField==='comment'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('studentUsername')">
-          Student <span class="sort-indicator" *ngIf="sortField==='studentUsername'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Schüler <span class="sort-indicator" *ngIf="sortField==='studentUsername'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('testName')">
           Test <span class="sort-indicator" *ngIf="sortField==='testName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
         </th>
+        <th class="sortable" (click)="toggleSort('createdOn')">
+          Erstellt <span class="sort-indicator" *ngIf="sortField==='createdOn'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th>Aktionen</th>
       </tr>
       </thead>
       <tbody>
@@ -81,17 +93,23 @@
         <td>{{ g.comment }}</td>
         <td>{{ g.studentUsername }}</td>
         <td>{{ g.testName }}</td>
+        <td>{{ g.createdOn | date:'yyyy-MM-dd HH:mm' }}</td>
+        <td>
+          <button class="btn btn-danger" *ngIf="isAdmin || isOwner(g)" (click)="onDelete(g)" [disabled]="deletingId===g.id">
+            {{ deletingId===g.id ? 'Wird gelöscht...' : 'Löschen' }}
+          </button>
+        </td>
       </tr>
       </tbody>
     </table>
 
     <div class="pagination">
-      <button class="btn" (click)="prev()" [disabled]="page?.number===0 || loading">Prev</button>
-      <span>Page {{ (page?.number ?? 0) + 1 }} / {{ page?.totalPages ?? 1 }}</span>
-      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= (page?.totalPages ?? 1) - 1 || loading">Next</button>
+      <button class="btn" (click)="prev()" [disabled]="page?.number===0 || loading">Zurück</button>
+      <span>Seite {{ (page?.number ?? 0) + 1 }} / {{ page?.totalPages ?? 1 }}</span>
+      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= (page?.totalPages ?? 1) - 1 || loading">Weiter</button>
     </div>
 
-    <p *ngIf="loading">Loading...</p>
+    <p *ngIf="loading">Wird geladen...</p>
     <p class="error" *ngIf="listError">{{ listError }}</p>
   </section>
 </div>

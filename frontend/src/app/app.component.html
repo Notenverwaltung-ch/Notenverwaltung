@@ -3,19 +3,18 @@
     <a class="brand" routerLink="/welcome">{{ title }}</a>
 
     <nav class="nav">
-      <a routerLink="/welcome" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Welcome</a>
-      <a *ngIf="auth.isAuthenticated()" routerLink="/home" routerLinkActive="active">Home</a>
-      <a *ngIf="auth.isAuthenticated()" routerLink="/grades" routerLinkActive="active">Grades</a>
+      <a routerLink="/welcome" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Willkommen</a>
+      <a *ngIf="auth.isAuthenticated()" routerLink="/grades" routerLinkActive="active">Noten</a>
     </nav>
 
     <span class="spacer"></span>
 
     <ng-container *ngIf="!auth.isAuthenticated(); else loggedIn">
-      <a class="btn btn-text" routerLink="/login">Login</a>
-      <a class="btn btn-text" routerLink="/register">Register</a>
+      <a class="btn btn-text" routerLink="/login">Anmelden</a>
+      <a class="btn btn-text" routerLink="/register">Registrieren</a>
     </ng-container>
     <ng-template #loggedIn>
-      <button class="btn btn-text" (click)="logout()" aria-label="Logout">Logout</button>
+      <button class="btn btn-text" (click)="logout()" aria-label="Abmelden">Abmelden</button>
     </ng-template>
   </div>
 </header>

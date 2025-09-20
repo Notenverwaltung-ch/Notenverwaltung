@@ -33,11 +33,11 @@ export class RegisterComponent {
     this.auth.register({ username, email: email || undefined, password }).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/home']);
+        this.router.navigate(['/welcome']);
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message || 'Registration failed.';
+        this.error = err?.error?.message || 'Registrierung fehlgeschlagen.';
       }
     });
   }
