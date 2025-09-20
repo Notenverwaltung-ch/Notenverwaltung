@@ -55,6 +55,47 @@ public class GradeController {
         return ResponseEntity.ok(page);
     }
 
+    @GetMapping("/view")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "List grades (enriched view)",
+            description = "Returns grades with student username and test name, supports filters by studentUsername, testName, valueMin, valueMax.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Page of grades returned",
+                            content = @Content(mediaType = "application/json"))
+            }
+    )
+    public ResponseEntity<Page<ch.notenverwaltung.model.dto.GradeViewDTO>> getView(
+            Pageable pageable,
+            @Parameter(description = "Filter by student username (contains, optional)") @RequestParam(value = "studentUsername", required = false) String studentUsername,
+            @Parameter(description = "Filter by test name (contains, optional)") @RequestParam(value = "testName", required = false) String testName,
+            @Parameter(description = "Minimum grade value (optional)") @RequestParam(value = "valueMin", required = false) BigDecimal valueMin,
+            @Parameter(description = "Maximum grade value (optional)") @RequestParam(value = "valueMax", required = false) BigDecimal valueMax,
+            Authentication auth
+    ) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        Page<ch.notenverwaltung.model.dto.GradeViewDTO> page = gradeService.findView(pageable, studentUsername, testName, valueMin, valueMax, isAdmin, auth.getName());
+        return ResponseEntity.ok(page);
+    }
+
+    @GetMapping("/view/own")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "List own grades (enriched view)",
+            description = "Returns only the currently authenticated user's grades with student username and test name. Admins also get their own grades when calling this endpoint.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Page of grades returned",
+                            content = @Content(mediaType = "application/json"))
+            }
+    )
+    public ResponseEntity<Page<ch.notenverwaltung.model.dto.GradeViewDTO>> getOwnView(
+            Pageable pageable,
+            Authentication auth
+    ) {
+        Page<ch.notenverwaltung.model.dto.GradeViewDTO> page = gradeService.findView(pageable, null, null, null, null, false, auth.getName());
+        return ResponseEntity.ok(page);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Get grade by ID",
@@ -76,14 +117,20 @@ public class GradeController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Create grade",
+            description = "Admins can create grades for any student. Users can only create grades for themselves; any provided studentId will be ignored and replaced with the current user's id.",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Grade created",
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = GradeDTO.class))),
                     @ApiResponse(responseCode = "400", description = "Validation error", content = @Content)
             })
-    public ResponseEntity<GradeDTO> create(@RequestBody GradeDTO dto) {
+    public ResponseEntity<GradeDTO> create(@RequestBody GradeDTO dto, Authentication auth) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            UUID currentUserId = getUserIdFromPrincipal(auth);
+            dto.setStudentId(currentUserId);
+        }
         GradeDTO created = gradeService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -101,13 +148,23 @@ public class GradeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Delete grade",
+            description = "Admins can delete any grade. Users can only delete their own grades.",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Deleted", content = @Content),
+                    @ApiResponse(responseCode = "403", description = "Forbidden for non-owners", content = @Content),
                     @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
             })
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication auth) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            GradeDTO dto = gradeService.getById(id);
+            UUID currentUserId = getUserIdFromPrincipal(auth);
+            if (!dto.getStudentId().equals(currentUserId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         gradeService.delete(id);
         return ResponseEntity.noContent().build();
     }

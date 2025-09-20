@@ -54,6 +54,23 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Authentication, Routing and Environment Configuration
+
+- Base API URL is configured in `src/environments/environment.ts` (production) and `src/environments/environment.development.ts` (development).
+  - Development builds replace `environment.ts` with `environment.development.ts` automatically via `angular.json` fileReplacements.
+  - Set `apiBaseUrl` to your backend base URL, e.g. `http://localhost:8080`.
+- Auth endpoints used:
+  - POST `${apiBaseUrl}/public/auth/login`
+  - POST `${apiBaseUrl}/public/auth/register`
+- Routes:
+  - `/login` – Login page
+  - `/register` – Registration page
+  - `/access` – Prompt shown when accessing a guarded route without a valid token; includes quick login and links to login/register
+  - `/home` – Example protected page (requires auth)
+  - Default route redirects to `/home`.
+- Guard behavior: If navigating to a guarded route without a valid token, the app redirects to `/access`.
+- Tokens are stored in `localStorage` under key `auth_token` after successful login/register.
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

@@ -44,6 +44,20 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
 }
 
+// Ensure the executable Spring Boot JAR is produced with a Main-Class and a stable name
+springBoot {
+    mainClass.set("ch.notenverwaltung.Main")
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveFileName.set("app.jar")
+}
+
+// Disable the plain JAR to avoid packaging a non-executable artifact
+tasks.named<org.gradle.jvm.tasks.Jar>("jar") {
+    enabled = false
+}
+
 tasks.test {
     useJUnitPlatform()
 }

@@ -61,7 +61,7 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String jwt = jwtTokenProvider.generateToken(userDetails.getUsername());
+            String jwt = jwtTokenProvider.generateToken(userDetails);
 
             return ResponseEntity.ok(new AuthResponseDTO(jwt));
         } catch (Exception e) {
@@ -97,7 +97,7 @@ public class AuthController {
                 registrationDTO.getDateOfBirth()
         );
 
-        String jwt = jwtTokenProvider.generateToken(user.getUsername());
+        String jwt = jwtTokenProvider.generateToken(user.getUsername(), user.getRoles());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new AuthResponseDTO(jwt));
