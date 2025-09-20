@@ -2,6 +2,20 @@
 
 A Spring Boot REST application for managing student grades with JPA integration to a PostgreSQL database.
 
+## Docker Images
+
+The CI/CD pipeline builds and publishes two Docker images to GitHub Container Registry (GHCR) on each release:
+
+- Backend API image: ghcr.io/${OWNER}/notenverwaltung:TAG
+- Frontend image: ghcr.io/${OWNER}/notenverwaltung-frontend:TAG (also tagged as latest)
+
+Direct links to the packages on GHCR (web UI):
+
+- Backend: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung
+- Frontend: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung-frontend
+
+Replace ${OWNER} with the GitHub organization/user that owns this repository, and replace TAG with the release version (e.g., 1.3.0). If you are viewing a published release on GitHub, the tag shown for that release matches the image tags.
+
 ## Technologies Used
 
 - **Spring Boot 3.2.0**: Core framework

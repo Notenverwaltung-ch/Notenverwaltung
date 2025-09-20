@@ -314,6 +314,33 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate release body with Docker image links
+        id: relbody
+        shell: bash
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          {
+            printf "%s\n" "# Docker Images"
+            printf "%s\n" ""
+            printf "%s\n" "The CI/CD pipeline built and published two Docker images to GitHub Container Registry for this release:"
+            printf "%s\n" ""
+            printf "%s\n" "- Backend API image:"
+            printf "%s\n" "  - Pull/tag: ghcr.io/${OWNER_LC}/notenverwaltung:${VERSION}"
+            printf "%s\n" "  - Package page: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung"
+            printf "%s\n" ""
+            printf "%s\n" "- Frontend image:"
+            printf "%s\n" "  - Pull/tag: ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${VERSION} (also available as ghcr.io/${OWNER_LC}/notenverwaltung-frontend:latest)"
+            printf "%s\n" "  - Package page: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung-frontend"
+            printf "%s\n" ""
+            printf "%s\n" "Usage examples:"
+            printf "%s\n" "- docker pull ghcr.io/${OWNER_LC}/notenverwaltung:${VERSION}"
+            printf "%s\n" "- docker pull ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${VERSION}"
+          } > release_body.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -321,6 +348,7 @@ jobs:
           name: ${{ needs.compute-version.outputs.version }}
           files: |
             artifacts/**
+          body_path: release_body.md
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
