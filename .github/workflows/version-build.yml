@@ -148,7 +148,7 @@ jobs:
           shopt -s nullglob
           outdir="documentation/build"
           mkdir -p "$outdir"
-          declare -a built
+          built=()
           # Iterate .tex files that are standalone (contain \documentclass) and exclude asset directories
           while IFS= read -r -d '' file; do
             # Filter by content: only build if it contains \documentclass
@@ -174,7 +174,7 @@ jobs:
             outpdf="$outdir/${base}-${VERSION}.pdf"
             cp "$srcpdf" "$outpdf"
             built+=("$outpdf")
-          done < <(find documentation -type f -name "*.tex" -print0 | xargs -0 -I{} bash -lc 'p="{}"; case "$p" in */images/*|*/diagrams/*|*/dump/*|*/swagger/*|*/testcases/*) exit 0;; esac; echo "$p"')
+          done < <(find documentation \( -path "*/images/*" -o -path "*/diagrams/*" -o -path "*/dump/*" -o -path "*/swagger/*" -o -path "*/testcases/*" \) -prune -o -type f -name "*.tex" -print0)
 
           if [ ${#built[@]} -eq 0 ]; then
             echo "No .tex files found to build under documentation/" >&2
@@ -186,7 +186,6 @@ jobs:
           echo "outdir=$outdir" >> "$GITHUB_OUTPUT"
 
       - name: Upload PDF artifacts
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
