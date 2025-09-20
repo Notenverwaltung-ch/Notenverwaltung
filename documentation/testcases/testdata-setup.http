@@ -1,0 +1,155 @@
+### Environment: use http-client.env.json dev profile
+# @name register
+POST http://localhost:8080/api/public/auth/register
+Content-Type: application/json
+
+{
+  "username": "test@test.ch",
+  "password": "123456",
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "test@test.ch",
+  "dateOfBirth": "2000-01-01"
+}
+
+### Login and get token
+# @name login
+POST http://localhost:8080/api/public/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "i10sLkbtf0CtZzO7"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+### Resolve studentId for registered test user
+# Fallback: fetch users and pick test(at)test.ch so later tests (T9) have {{studentId}}
+GET http://localhost:8080/api/admin/users?page=0&size=50
+Authorization: Bearer {{token}}
+
+> {% 
+const pageU = response.body; 
+if (pageU && Array.isArray(pageU.content)) {
+  const u = pageU.content.find(it => it.username === 'test@test.ch');
+  if (u) {
+    client.global.set('studentId', u.id);
+  }
+}
+%}
+
+### Create Subject (ADMIN)
+# @name createSubject
+POST http://localhost:8080/api/subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mathematik"
+}
+
+> {% client.global.set("subjectId", response.body && response.body.id ? response.body.id : client.global.get("subjectId")); %}
+
+### Fallback: Fetch existing Subject by name
+# @name fetchSubjectIfExists
+GET http://localhost:8080/api/subjects?page=0&size=50
+Authorization: Bearer {{token}}
+
+> {% 
+const page = response.body; 
+if (page && Array.isArray(page.content)) {
+  const match = page.content.find(it => it.name === 'Mathematik');
+  if (match && !client.global.get('subjectId')) {
+    client.global.set('subjectId', match.id);
+  }
+}
+%}
+
+### Create Semester (ADMIN)
+# @name createSemester
+POST http://localhost:8080/api/semesters
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "HS2025",
+  "startDate": "2025-09-01",
+  "endDate": "2026-01-31"
+}
+
+> {% client.global.set("semesterId", response.body && response.body.id ? response.body.id : client.global.get("semesterId")); %}
+
+### Fallback: Fetch existing Semester by name
+# @name fetchSemesterIfExists
+GET http://localhost:8080/api/semesters?page=0&size=50
+Authorization: Bearer {{token}}
+
+> {% 
+const page2 = response.body; 
+if (page2 && Array.isArray(page2.content)) {
+  const match2 = page2.content.find(it => it.name === 'HS2025');
+  if (match2 && !client.global.get('semesterId')) {
+    client.global.set('semesterId', match2.id);
+  }
+}
+%}
+
+
+
+### Create SemesterSubject (ADMIN)
+# These requests should be exectuted after test T8, they are needed for T9–T15.
+POST http://localhost:8080/api/semester-subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterId": "{{semesterId}}",
+  "subjectId": "{{subjectId}}"
+}
+
+> {% client.global.set("semesterSubjectId", response.body && response.body.id ? response.body.id : client.global.get("semesterSubjectId")); %}
+
+### Create Class (ADMIN)
+POST http://localhost:8080/api/classes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterSubjectId": "{{semesterSubjectId}}"
+}
+
+> {% client.global.set("classId", response.body && response.body.id ? response.body.id : client.global.get("classId")); %}
+
+### Create Test (ADMIN) - prerequisite for T9
+POST http://localhost:8080/api/tests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Setup Test for T9",
+  "semesterSubjectId": "{{semesterSubjectId}}",
+  "classId": "{{classId}}"
+}
+
+> {% client.global.set("testId2", response.body && response.body.id ? response.body.id : client.global.get("testId2")); %}
+
+### List subjects (USER/ADMIN)
+GET http://localhost:8080/api/subjects?page=0&size=10
+Authorization: Bearer {{token}}
+
+### List semesters (USER/ADMIN)
+GET http://localhost:8080/api/semesters?page=0&size=10
+Authorization: Bearer {{token}}
+
+### List semester-subjects (USER/ADMIN)
+GET http://localhost:8080/api/semester-subjects
+Authorization: Bearer {{token}}
+
+### List classes (USER/ADMIN)
+GET http://localhost:8080/api/classes?page=0&size=10
+Authorization: Bearer {{token}}
+
+### List tests (USER/ADMIN)
+GET http://localhost:8080/api/tests?page=0&size=10
+Authorization: Bearer {{token}}

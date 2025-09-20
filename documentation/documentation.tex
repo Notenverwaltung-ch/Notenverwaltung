@@ -13,6 +13,15 @@
 \usepackage{hyperref}
 \usepackage{xurl}
 \usepackage{xcolor}
+\usepackage{pdflscape}
+
+% TikZ for diagrams from text
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usetikzlibrary{calc,chains,shapes,fit}
+
+\graphicspath{{diagrams/}}
+\usepackage{float}
 
 % --- Tables ---
 \usepackage{array}
@@ -24,8 +33,9 @@
 
 % --- Code / listings ---
 \usepackage{listings}
-\usepackage{listingsutf8}
-\lstset{inputencoding=utf8/latin1}
+% removed listingsutf8 (deprecated with modern LaTeX); rely on inputenc UTF-8
+%\usepackage{listingsutf8}
+%\lstset{inputencoding=utf8/latin1}
 
 % --- Page geometry ---
 \usepackage{geometry}
@@ -39,7 +49,7 @@
 \rhead{\today}
 \rfoot{Seite \thepage}
 \cfoot{}
-\lfoot{\footnotesize\mbox{\url{https://github.com/Luca-Guettinger/TODO}}}
+\lfoot{\footnotesize\mbox{\url{https://github.com/Notenverwaltung-ch/Notenverwaltung}}}
 
 % --- Listings config ---
 \lstset{
@@ -52,7 +62,8 @@
     keepspaces=true,
     showstringspaces=false,
     tabsize=2,
-    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {Ä}{{\"A}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {ss}{{\ss}}1 {é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {É}{{\'E}}1
 }
 
 % --- Helpers ---
@@ -75,12 +86,15 @@
 % ---------------- Titelseite ----------------
     \begin{titlepage}
         \centering
-        {\huge\bfseries Notenverwaltungssystem für eine Hochschule \par}
+        {\huge\bfseries Notenverwaltungssystem \par}
         \vspace{2cm}
         {\Large Luca Güttinger \par}
         \vspace{0.5cm}
-        {\Large Datenbanken / Big Data / Data Cubes \par}
+        {\Large Dipl. Informatiker Applikationsentwicklung \par}
         \vspace{0.5cm}
+        {\Large TEKO Zürich \par}
+        \vspace{0.5cm}
+        {\Large Datenbanken / Big Data / Data Cubes \par}
         {\Large Dozent: Milad Fakiry \par}
         \vspace{0.5cm}
         {\Large Abgabedatum: 07.09.2025 \par}
@@ -95,71 +109,140 @@
     \newpage
 
 % ---------------- Einleitung ----------------
+
+
     \section{Einleitung}
-    In diesem Projekt wurde ein Notenverwaltungssystem für eine Hochschule entwickelt.
-    Das Szenario beinhaltet die Verwaltung von Studierenden, Semestern, Fächern, Klassen, Tests sowie deren Noten.
+    In diesem Projekt wurde ein Notenverwaltungssystem für die Website Notenverwaltung.ch entwickelt.
+    Das Szenario sieht vor, dass Schülerinnen und Schüler ihre eigenen Noten jederzeit einsehen und verwalten können, auch unabhängig von Lehrpersonen.
+    Zusätzlich können optionale Verwaltungsfunktionen für Fächer, Klassen, Tests und Semester genutzt werden,
+    sofern diese von einer Schule oder Lehrperson bereitgestellt werden.
     Die Anwendung besteht aus einer PostgreSQL-Datenbank und einem Spring Boot Service, welcher über eine REST-API zugänglich ist.
-    Die Endpunkte sind durch JWT-Token abgesichert und es existieren verschiedene Rollen (z. B. \code{ADMIN}, \code{USER}).
+    Die Endpunkte sind durch JWT-Token abgesichert und es existieren die Rollen \code{USER} und \code{ADMIN}.
 
     \subsection{Ziel der Arbeit}
-    Ziel war es, eine relationale Datenbank zu modellieren und mit SQL-Statements umzusetzen.
-    Darauf aufbauend sollte eine REST-API entstehen, die auf diese Datenbank zugreift und die Verwaltung der Daten ermöglicht.
+    Ziel der Arbeit ist es, ein Backend für Notenverwaltung.ch zu konzipieren und umzusetzen,
+    das insbesondere die eigenständige Notenverwaltung durch Schülerinnen und Schüler ermöglicht, unabhängig von Lehrpersonen. Im Fokus stehen:
+    \begin{itemize}
+        \item eine saubere relationale Datenbankstruktur,
+        \item eine klar dokumentierte REST-API (Spring Boot) für das Erfassen, Bearbeiten und Auswerten persönlicher Leistungen,
+        \item Authentifizierung und Autorisierung mittels JWT mit Rollen (\code{USER}, \code{ADMIN}),
+        \item optionale Anbindung schulischer Strukturen (Fächer, Klassen, Tests, Semester), sofern verfügbar.
+    \end{itemize}
 
     \subsection{Abgrenzung}
     Teil der Arbeit ist die Datenmodellierung, SQL-Implementierung, beispielhafte Abfragen und ein Testprotokoll.
-    Nicht Teil der Arbeit ist eine vollständige Benutzeroberfläche im Frontend oder die produktive Integration in bestehende Systeme.
+    Ebenso wird die Absicherung der Schnittstellen (JWT) und eine rollenbasierte Zugriffskontrolle
+    (\code{USER}, \code{ADMIN}) umgesetzt. Nicht Teil der Arbeit ist eine vollständige,
+    produktiv eingesetzte Frontend-Weboberfläche oder die Integration in bestehende Schulinfrastrukturen; der Fokus
+    liegt auf der Backend-Funktionalität für Notenverwaltung.ch. Ein eigenständiges Frontend (z. B. mit Angular) ist
+    im Rahmen dieser Arbeit nicht vorgesehen oder höchstens als sehr rudimentärer Prototyp zur Veranschaulichung der API gedacht.
+    \newpage
 
 % ---------------- Anforderungsanalyse ----------------
+
+
     \section{Anforderungsanalyse}
+    Im Mittelpunkt steht, dass Schülerinnen und Schüler sich registrieren bzw. anmelden, ihre persönlichen Noten sicher einsehen,
+    erfassen und bei Bedarf bearbeiten sowie Auswertungen über ihre Leistungen vornehmen können.
+    Lehrpersonen und Admins erhalten, soweit vorgesehen, erweiterte Funktionen zur optionalen Verwaltung von Fächern, Klassen, Tests und Semestern.
+    Sicherheitsanforderungen (JWT-basierte Authentifizierung und rollenbasierte Autorisierung), Datenkonsistenz, Nachvollziehbarkeit von Änderungen
+    und der Schutz personenbezogener Daten (Datensparsamkeit, Zugriff nur für Berechtigte) sind zentrale nicht‑funktionale Anforderungen.
+
+    \subsubsection{Funktionale Anforderungen}
+    \begin{itemize}
+        \item Registrierung und Anmeldung von Nutzerinnen und Nutzern (USER, ADMIN).
+        \item Selbstständige Verwaltung persönlicher Noten durch Benutzer: Anlegen, Bearbeiten, Löschen von Tests/Noten im eigenen Bereich.
+        \item Berechnung von Durchschnittswerten und einfachen Auswertungen pro Fach/Semester.
+        \item Rollenbasierter Zugriff auf REST-API-Endpunkte mit klar definierten Berechtigungen.
+        \item Fehlermeldungen und Validierungen (z. B. Pflichtfelder, Wertebereiche, Dublettenprüfung bei eindeutigen Attributen).
+    \end{itemize}
+
+    \subsubsection{Nicht-funktionale Anforderungen}
+    \begin{itemize}
+        \item Sicherheit: JWT-basierte Authentifizierung, rollenbasierte Autorisierung, sichere Passwortspeicherung (Hashing), minimale Datenspeicherung.
+        \item Datenqualität: Konsistenz durch Constraints/Referentielle Integrität, Transaktionssicherheit und Validierungen im Service.
+        \item Performance und Skalierbarkeit: REST-API mit angemessenen Antwortzeiten unter typischer Last; effiziente Abfragen/Indizes.
+        \item Verfügbarkeit und Betrieb: Containerisierbar (Docker), reproduzierbare lokale Entwicklung (docker-compose), einfache Deployment-Pfade.
+        \item Nachvollziehbarkeit/Logging: Sinnvolle Server-Logs für Diagnose und Audit-Zwecke ohne sensible Daten im Klartext.
+        \item Benutzbarkeit der API: Konsistente Endpunkte, klare Fehlercodes/-nachrichten und grundlegende Dokumentation (z. B. OpenAPI/HTTP-Beispiele).
+        \item Wartbarkeit: Saubere Schichtung (Controller/Service/Repository), klare Domänenbegriffe, Tests für Kernfunktionen.
+    \end{itemize}
+
+    Die folgenden Entitäten und Beziehungen bilden diese Anforderungen im Datenmodell ab.
+
     Die realen Entitäten im Szenario sind:
 
     \begin{itemize}
-        \item \textbf{Student}: Person mit Matrikelnummer, persönlichen Daten und Status.
         \item \textbf{Semester}: Zeitraum mit Start- und Enddatum, in dem Fächer angeboten werden.
-        \item \textbf{Fach (Subject)}: Lehrfach, das in Semestern angeboten wird.
-        \item \textbf{Semesterfach (SemesterSubject)}: Zuordnung eines Faches zu einem Semester.
+        \item \textbf{Fach}: Lehrfach, das in Semestern angeboten wird.
         \item \textbf{Klasse}: Gruppe von Studierenden, die ein Semesterfach besuchen.
         \item \textbf{Test}: Prüfung oder Klausur, die einer Klasse zugeordnet ist.
-        \item \textbf{Note (Grade)}: Bewertung eines Tests für einen Studierenden.
-        \item \textbf{Benutzer (User)}: Person mit Login-Daten für das System.
-        \item \textbf{Rolle (UserRole)}: Zugriffsrechte für Benutzer (z. B. \code{ADMIN}, \code{USER}).
+        \item \textbf{Note}: Bewertung eines Tests für einen Studierenden.
+        \item \textbf{Benutzer}: Person mit Login-Daten für das System. Kann ein Schüler, eine Lehrperson oder ein Admin sein.
+        \item \textbf{Rolle}: Rollen werden als Element-Collection in \code{user_roles} ohne eigene \code{roles}-Tabelle gespeichert
+        \item (\code{USER}, \code{ADMIN}).
     \end{itemize}
 
-    Die Beziehungen:
+    \subsubsection{Beziehungen}
     \begin{itemize}
         \item Ein \textbf{Semester} hat mehrere \textbf{Semesterfächer}.
         \item Ein \textbf{Fach} kann in mehreren \textbf{Semestern} vorkommen.
         \item Ein \textbf{Semesterfach} kann mehrere \textbf{Klassen} haben.
         \item Eine \textbf{Klasse} hat mehrere \textbf{Tests}.
         \item Ein \textbf{Test} hat mehrere \textbf{Noten}.
-        \item Ein \textbf{Student} kann mehrere \textbf{Noten} haben.
-        \item Ein \textbf{Benutzer} kann mehrere Rollen haben.
+        \item Ein \textbf{Benutzer} kann mehrere \textbf{Noten} haben.
+        \item Ein \textbf{Benutzer} kann mehrere \textbf{Rollen} haben.
     \end{itemize}
 
 % ---------------- Datenmodell ----------------
-    \section{Datenmodell}
+    \newpage
+    \begin{landscape}
+        \section{Datenmodell}
 
-    \subsection{ER-Diagramm}
-    \textbf{TODO: Grafik ER-Diagramm mit Entitäten, Relationen und Kardinalitäten einfügen}
+        \subsection{ER-Diagramm}
+        Das folgende ER-Diagramm stellt die Entitäten, deren Attribute und die Beziehungen mit Kardinalitäten dar:
+
+        \thispagestyle{empty}
+        \begin{figure}[H]
+            \centering
+            \resizebox{\linewidth}{!}{
+                \begin{tikzpicture}[
+                    scale=1.0,
+                    every node/.style={scale=1.0},
+                    entity/.style={draw, rectangle, rounded corners, thick, align=left, inner sep=3pt, fill=white},
+                    attr/.style={font=\scriptsize},
+                    rel/.style={-Latex, thick},
+                    crow/.style={-{Straight Barb[length=2.5mm]}, thick},
+                    one/.style={-{}, thick},
+                    note/.style={font=\scriptsize, fill=white, inner sep=1pt}
+                ]
+                    % Entities
+                    \node[entity] (Semester) {\textbf{semesters}\\\footnotesize id: uuid (PK)\\ name: varchar(100)\\ start\_date: date\\ end\_date: date};
+                    \node[entity, right=2.8cm of Semester] (Subject) {\textbf{subjects}\\\footnotesize id: uuid (PK)\\ name: varchar(150)};
+                    \node[entity, below=2.0cm of $(Semester)!0.5!(Subject)$] (SemSub) {\textbf{semester\_subjects}\\\footnotesize id: uuid (PK)\\ semester\_id: uuid (FK)\\ subject\_id: uuid (FK)};
+                    \node[entity, below=2.0cm of SemSub] (Class) {\textbf{classes}\\\footnotesize id: uuid (PK)\\ semester\_subject\_id: uuid (FK)\\ name: varchar(100)};
+                    \node[entity, right=3.0cm of Class] (Test) {\textbf{tests}\\\footnotesize id: uuid (PK)\\ name: varchar(150)\\ class\_id: uuid (FK)\\ semester\_subject\_id: uuid (FK)\\ date: date\\ comment: varchar(1000)};
+                    \node[entity, right=3.0cm of Test] (Grade) {\textbf{grades}\\\footnotesize id: uuid (PK)\\ value: numeric(4,2)\\ weight: numeric(4,2)\\ user\_id: uuid (FK)\\ test\_id: uuid (FK)\\ comment: varchar(255)};
+                    \node[entity, above=1.8cm of Grade] (User) {\textbf{users}\\\footnotesize id: uuid (PK)\\ username: varchar(100)\\ password: varchar(255)\\ email: varchar(255)\\ first\_name: varchar(100)\\ last\_name: varchar(100)\\ active: boolean\\ created\_at: timestamp\\ updated\_at: timestamp};
+                    \node[entity, right=2.8cm of User] (UserRole) {\textbf{user\_roles}\\\footnotesize user\_id: uuid (FK)\\ role: varchar(50)};
+
+                    % Relationships
+                    \draw[rel] (Semester) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (SemSub);
+                    \draw[rel] (Subject) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (SemSub);
+                    \draw[rel] (SemSub) -- node[pos=0.1, left, note]{1} node[pos=0.9, left, note]{m} (Class);
+                    \draw[rel] (Class) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (Test);
+                    \draw[rel] (Test) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (Grade);
+                    \draw[rel] (User) -- node[pos=0.05, right, note]{1} node[pos=0.95, right, note]{m} (Grade);
+                    \draw[rel] (User) -- node[pos=0.05, above, note]{1} node[pos=0.95, above, note]{m} (UserRole);
+                \end{tikzpicture}
+            }
+            \caption{ER-Diagramm des Notenverwaltungssystems}
+            \label{fig:erd}
+        \end{figure}
+    \end{landscape}
 
     \subsection{Tabellenbeschreibung}
     Im Folgenden werden die Tabellen detailliert beschrieben. Für jede Entität gibt es eine separate Tabelle mit Attributen, Datentypen, Pflichten und Schlüsseln.
-
-    \subsubsection{students}
-    \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
-        \hline
-        \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
-        id & uuid & ja & Primärschlüssel \\ \hline
-        first\_name & varchar(100) & ja &  \\ \hline
-        last\_name & varchar(100) & ja &  \\ \hline
-        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
-        date\_of\_birth & date & nein &  \\ \hline
-        student\_number & varchar(50) & ja & Eindeutig (Unique) \\ \hline
-        active & boolean & ja & Default: true \\ \hline
-        created\_at & timestamp & ja &  \\ \hline
-        updated\_at & timestamp & nein &  \\ \hline
-    \end{longtable}
-    \textbf{Schlüssel / Constraints:} PK: id
 
     \subsubsection{semesters}
     \begin{longtable}{|L{4cm}|L{3cm}|L{3cm}|L{4cm}|}
@@ -209,8 +292,8 @@
         name & varchar(150) & ja &  \\ \hline
         class\_id & uuid & ja & FK $\rightarrow$ classes(id) \\ \hline
         semester\_subject\_id & uuid & ja & FK $\rightarrow$ semester\_subjects(id) \\ \hline
-        max\_points & numeric(10,2) & nein &  \\ \hline
-        date & date & nein &  \\ \hline
+        date & date & ja & Datum des Tests (liegt im Idealfall im Semesterzeitraum) \\ \hline
+        comment & varchar(1000) & nein & Freitext, optionaler Kommentar zum Test \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; FK: class\_id; FK: semester\_subject\_id
 
@@ -220,9 +303,9 @@
         \textbf{Attribut} & \textbf{Datentyp} & \textbf{Pflicht} & \textbf{Bemerkung} \\ \hline
         id & uuid & ja & Primärschlüssel \\ \hline
         value & numeric(4,2) & ja & Notenwert (z. B. 1.0-6.0) \\ \hline
-        weight & numeric(4,2) & nein & Gewichtung in Prozent \\ \hline
-        student\_id & uuid & ja & FK $\rightarrow$ students(id) \\ \hline
-        test\_id & uuid & ja & FK $\rightarrow$ tests(id) \\ \hline
+        weight & numeric(4,2) & ja & Gewichtung in Prozent \\ \hline
+        student\_id & uuid & ja & FK $\rightarrow$ users(id) \\ \hline
+        test\_id & uuid & nein & FK $\rightarrow$ tests(id) \\ \hline
         comment & varchar(255) & nein & Freitext \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: id; FK: student\_id; FK: test\_id; Unique(student\_id, test\_id) empfohlen
@@ -234,11 +317,11 @@
         id & uuid & ja & Primärschlüssel \\ \hline
         username & varchar(100) & ja & Eindeutig (Unique) \\ \hline
         password & varchar(255) & ja & Hash (BCrypt) \\ \hline
-        email & varchar(255) & ja & Eindeutig (Unique) empfohlen \\ \hline
+        email & varchar(255) & nein & Eindeutig (Unique) empfohlen \\ \hline
         first\_name & varchar(100) & nein &  \\ \hline
         last\_name & varchar(100) & nein &  \\ \hline
-        student\_number & varchar(50) & nein & Referenz auf Student möglich \\ \hline
-        active & boolean & ja & Default: true \\ \hline
+        date\_of\_birth & date & nein &  \\ \hline
+        active & boolean & ja & Default: false \\ \hline
         created\_at & timestamp & ja &  \\ \hline
         updated\_at & timestamp & nein &  \\ \hline
     \end{longtable}
@@ -252,79 +335,131 @@
         role & varchar(50) & ja & z. B. ADMIN, USER \\ \hline
     \end{longtable}
     \textbf{Schlüssel / Constraints:} PK: (user\_id, role); FK: user\_id
-    \newpage
+
+% ---------------- Umsetzungsbeschreibung ----------------
+
+
+    \section{Umsetzungsbeschreibung}
+
+    Die Notenverwaltung ist als Spring Boot Service realisiert und stellt eine REST-API zur Verfügung. Persistenz wird über JPA/Hibernate umgesetzt. Die Authentifizierung
+    und Autorisierung erfolgen über Spring Security mit JWTs und rollenbasierten Berechtigungen
+    (\code{USER}, \code{ADMIN}). Eine OpenAPI/Swagger-Dokumentation beschreibt die Schnittstellen.
+
+    \subsection{Architektur \/ Spring Boot Service}
+    Die Anwendung ist als monolithischer Spring Boot Service aufgebaut und folgt einer klaren Schichtentrennung:
+    \begin{itemize}
+        \item \textbf{Controller-Schicht}: REST-Endpoints (z. B. \code{/api/public/auth}, \code{/api/subjects})
+        \item \textbf{Service-Schicht}: Kapselt Geschäftslogik, Transaktionen und Validierungen; orchestriert Zugriffe auf Repositories.
+        \item \textbf{Repository-Schicht}: Spring Data JPA Repositories für CRUD-Operationen und abgeleitete/annotierte Queries.
+        \item \textbf{Domain\/Model}: JPA-Entities (z. B. \code{Semester}, \code{Subject}, \code{Class}, \code{Test}, \code{Grade}, \code{User}) sowie eine Element-Collection \code{user_roles} für Rollen (keine separate \code{roles}-Tabelle).
+    \end{itemize}
+    Der Service ist containerisierbar (Docker) und wird in der lokalen Entwicklung via \code{docker-compose} mit PostgreSQL betrieben.
+
+    \subsection{Persistenz mit JPA\/Hibernate}
+    Die Persistenzschicht verwendet Spring Data JPA mit Hibernate als Implementierung. Entities sind mit JPA-Annotationen versehen
+    (z. B. \code{@Entity}, \code{@Table}, \code{@Id}, \code{@ManyToOne}, \code{@OneToMany}). Repositories werden als Interfaces
+    (\code{extends JpaRepository<..., ...>}) definiert und liefern Standard-CRUD sowie abgeleitete Finder
+    (z. B. \code{findByName}, \code{findByUserIdAndTestId}).\newline
+    Transaktionen werden deklarativ über \code{@Transactional} (Service-Schicht) gesteuert.
+    Datenintegrität wird sowohl über DB-Constraints (PK, FK, Unique) als auch über Bean Validation (z. B. \code{@NotNull},
+    \code{@Size}) sichergestellt.
+
+    \subsection{Sicherheit: Spring Security mit JWT}
+    Die API ist über JWT gesichert. Der typische Flow:
+    \begin{enumerate}
+        \item Nutzer meldet sich über \code{POST /api/auth/login} mit Benutzername / Passwort an.
+        \item Bei Erfolg wird ein signiertes JWT (inkl. Rollen-Claims) ausgestellt und im Client gespeichert.
+        \item Folgeaufrufe enthalten \code{Authorization: Bearer <token>}; die Security-Konfiguration prüft Signatur, Gültigkeit und Rollen.
+    \end{enumerate}
+    Rollenbasierte Autorisierung wird per Ant-Matcher / Methodensicherheit \newline
+    (z.B. \code{@PreAuthorize("hasRole('ADMIN')")}) umgesetzt.
+    Passwörter werden mit BCrypt gehasht.
+
+    \subsection{OpenAPI / Swagger}
+    Die REST-Schnittstellen sind mit OpenAPI beschrieben. Während der Entwicklung ist die UI unter \code{/api/public/docs} erreichbar.
+    Die Spezifikation (JSON / YAML) ermöglicht die Generierung von Clients und dient der API-Dokumentation.
+    Endpunkte, Request / Response-Schemata sowie Fehlercodes sind dort ersichtlich. Die Swagger Dokumentation ist im Ordner \code{documentation/swagger} abgelegt.
 
 % ---------------- SQL-Implementierung ----------------
-    \section{SQL-Implementierung}
 
-    \subsection{CREATE TABLE Befehle}
-    \begin{lstlisting}
-CREATE TABLE public.students (
-  id uuid PRIMARY KEY,
-  first_name varchar(100) NOT NULL,
-  last_name varchar(100) NOT NULL,
-  email varchar(255) NOT NULL,
-  date_of_birth date,
-  student_number varchar(50) NOT NULL,
-  active boolean DEFAULT true NOT NULL,
-  created_at timestamp NOT NULL,
-  updated_at timestamp
-);
--- Weitere Tabellen siehe Anhang
-    \end{lstlisting}
+    \subsection{SQL-Implementierung}
+    In dieser Anwendung wird das Datenbankschema strikt mittels Flyway-Migrationen versioniert und aufgebaut.
+    Die DDL (CREATE TABLE, Constraints, Indizes) wird also über SQL-Skripte in den Flyway-Migrationsdateien gepflegt.
+    Dagegen sind die nachfolgenden INSERT- und SELECT-Beispiele als illustrative, vereinfachte SQLs zu verstehen:
+    In der produktiven Anwendung werden entsprechende Datenzugriffe hauptsächlich über Spring Data JPA Repositories
+    umgesetzt und nicht 1:1 mit diesen Roh-SQLs ausgeführt.
 
-    \subsection{Beispielhafte INSERT-Befehle}
-    \begin{lstlisting}
-INSERT INTO students (
-  id,
-  first_name,
-  last_name,
-  email,
-  student_number,
-  created_at,
-  updated_at
-) VALUES (
-  gen_random_uuid(),
-  'Max',
-  'Mustermann',
-  'max@uni.de',
-  'S12345',
-  now(),
-  now()
-);
+    \subsubsection{Schema-Definitionen}
 
-INSERT INTO subjects (
-  id,
-  name
-) VALUES (
-  gen_random_uuid(),
-  'Mathematik'
-);
-    \end{lstlisting}
+    Die folgenden Ausschnitte zeigen Auszüge aus der initialen Flyway-Migration. Weitere CREATE-Statements (inkl. Constraints)
+    befinden sich vollständig in folgendem Ordner: \\
+    \code{src/main/resources/db/migration}.
+
+    \lstinputlisting[language=SQL]{sql/schema_excerpt.sql}
+
+    \subsubsection{Beispielhafte INSERT-Befehle}
+    \noindent Die folgenden Inserts legen einige Beispiel-Datensätze an. Jede Gruppe ist nach Tabelle sortiert und kurz kommentiert.
+    \lstinputlisting[language=SQL]{sql/inserts_examples.sql}
+
+    \textit{Erläuterung:}
+    \begin{itemize}
+        \item Users: Erstellt zwei Demo-Benutzer (Studierende), um Join-Abfragen zu veranschaulichen.
+        \item Subjects: Fügt die Fächer hinzu, die in HS2025 angeboten werden.
+        \item Semesters: Definiert den Zeitraum HS2025, auf den die anderen Daten referenzieren.
+        \item Semester\_Subjects: Verknüpft Semester und Fächer und bildet das Lehrangebot ab.
+        \item Classes: Legt je eine Klasse pro Fach im Semester HS2025 an.
+        \item Tests: Erzeugt pro Klasse einen Test mit Datum und Maximalpunkten.
+        \item Grades: Vergibt zwei Noten für die beiden Studierenden auf die Tests.
+    \end{itemize}
 
 % ---------------- Beispielabfragen ----------------
-    \section{Beispielabfragen / UI}
 
-    \subsection{SQL-Abfragen}
-    \begin{lstlisting}[language=SQL]
--- Alle Noten eines Studenten
-SELECT s.first_name, s.last_name, g.value, t.name
-FROM grades g
-JOIN students s ON g.student_id = s.id
-JOIN tests t ON g.test_id = t.id
-WHERE s.student_number = 'S12345';
+    \subsubsection{Beispielhafte SELECT-Befehle}
+    Die folgenden SELECT-Beispiele sind didaktisch und werden in der Anwendung so nicht direkt ausgeführt. In der Praxis übernimmt die Repository-Schicht (Spring Data JPA) die Abfragen.
+    \lstinputlisting[language=SQL]{sql/selects_examples.sql}
+
+    \subsubsection{Beispielhafte Hibernate Query}
+    Abschliessend ein konkretes Beispiel, wie eine solche Abfrage in der Anwendung über ein Repository umgesetzt ist.
+    Die Methode liefert die Noten eines Semesters (optional gefiltert nach Student) als DTO:
+    \begin{lstlisting}[language=Java]
+    @Query("select new ch.notenverwaltung.model.dto.SemesterGradeRow(" +
+            " g.id, u.id, u.firstName, u.lastName, subj.id, subj.name, t.id, t.name, t.date, g.value, g.weight, g.comment) " +
+            " from Grade g " +
+            " join g.student u " +
+            " left join g.test t " +
+            " left join t.semesterSubject ss " +
+            " left join ss.subject subj " +
+            " left join ss.semester sem " +
+            " where sem.id = :semesterId " +
+            " and ( u.id = COALESCE(:studentId, u.id) )")
+    List<SemesterGradeRow> findSemesterGrades(@Param("semesterId") UUID semesterId,
+                                              @Param("studentId") UUID studentId);
     \end{lstlisting}
 
-    \textbf{Beispielausgabe:}
-    \begin{verbatim}
-Max Mustermann | 5.50 | Mathematik Test 1
-Max Mustermann | 4.75 | Informatik Test 1
-    \end{verbatim}
-
-    \textbf{TODO: Screenshot aus DB-Client einfügen}
+    \textbf{Beispielausgabe (Auszug):}\\
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\linewidth]{images/sql_output_3}
+        \caption{Beispielausgabe: 3: Alle Tests eines Semesters mit Durchschnittsnote pro Test}
+        \label{fig:sql_output_3}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\linewidth]{images/sql_output_6}
+        \caption{Beispielausgabe: 6. Rangliste pro Test (beste zuerst) inkl. Semester}
+        \label{fig:sql_output_6}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\linewidth]{images/sql_output_7}
+        \caption{Beispielausgabe: 7: Workload je Fach im Semester: Anzahl Klassen, Tests, Bewertungen}
+        \label{fig:sql_output_7}
+    \end{figure}
     \newpage
 
 % ---------------- Testprotokoll ----------------
+
+
     \section{Testprotokoll}
 
     \subsection{Beschreibung}
@@ -332,25 +467,25 @@ Max Mustermann | 4.75 | Informatik Test 1
 
     \subsection{Testfälle}\label{sec:testfaelle}
 
-    \subsubsection{T1 - Student anlegen (gültige Daten)}
+    \subsubsection{T1 - User anlegen (gültige Daten)}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
             \textbf{Feld} & \textbf{Wert} \\ \hline
             ID & T1 \\ \hline
-            Erwartet & Student wird gespeichert \\ \hline
+            Erwartet & User wird gespeichert \\ \hline
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV (Docker, Postgres 16, SB 3.3) \\ \hline
-            Pre-Conditions & Admin-Token vorhanden; keine vorhandenen Studenten mit \code{student_number=S12345} \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} mit Body \code{\{first_name, last_name, email, student_number\}} \\ \hline
-            Response (gekürzt) & \code{201 Created}; JSON mit \code{id, first_name, last_name, email, student_number} \\ \hline
-            Post-Conditions & Student existiert in Tabelle \code{students}; Auditfelder gesetzt \\ \hline
-            Referenz & REQ-STU-001 \\ \hline
+            Pre-Conditions & Admin-Token vorhanden; Username noch nicht vergeben \\ \hline
+            Endpoint/Schritte & \code{POST /api/admin/users} mit Body \code{\{username, password, roles:[\"USER\"]\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; JSON mit \code{id, username, roles, active, created_at} \\ \hline
+            Post-Conditions & User existiert in Tabelle \code{users}; Auditfelder gesetzt \\ \hline
+            Referenz & REQ-USR-001 \\ \hline
         \end{tabularx}
     \end{small}
 
-    \subsubsection{T2 - Student anlegen (fehlende Pflichtfelder)}
+    \subsubsection{T2 - User anlegen (fehlende Pflichtfelder)}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
             \hline
@@ -360,11 +495,11 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Request ohne Pflichtfelder \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} (ungültiger Body) \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
+            Endpoint/Schritte & \code{POST /api/admin/users} (ungültiger Body) \\ \hline
             Response (gekürzt) & \code{400 Bad Request} mit Validierungsfehlern \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
-            Referenz & REQ-STU-002 \\ \hline
+            Referenz & REQ-USR-002 \\ \hline
         \end{tabularx}
     \end{small}
 
@@ -378,7 +513,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Keine \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
             Endpoint/Schritte & \code{INSERT}/\code{POST} Semester $\rightarrow$ anschliessend \code{GET /api/semesters} \\ \hline
             Response (gekürzt) & \code{201 Created}; Objekt in GET-Liste vorhanden \\ \hline
             Post-Conditions & Semester existiert \\ \hline
@@ -396,7 +531,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Subject mit \code{name=Mathematik} existiert bereits \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Subject mit \code{name=Mathematik} existiert bereits \\ \hline
             Endpoint/Schritte & \code{POST /api/subjects} mit Body \code{\{name:"Mathematik"\}} \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400 Bad Request} mit Fehlermeldung \\ \hline
             Post-Conditions & Kein weiteres Subject mit gleichem Namen \\ \hline
@@ -414,7 +549,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Semester \code{HS2025} und Subject \code{Mathematik} existieren \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Semester \code{HS2025} und Subject \code{Mathematik} existieren \\ \hline
             Endpoint/Schritte & \code{POST /api/semester-subjects} mit \code{\{semesterId, subjectId\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Objekt enth\"alt IDs \\ \hline
             Post-Conditions & Datensatz in \code{semester_subjects} existiert \\ \hline
@@ -432,7 +567,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Zuordnung Semester \code{HS2025} + \code{Mathematik} existiert \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Zuordnung Semester \code{HS2025} + \code{Mathematik} existiert \\ \hline
             Endpoint/Schritte & Erneuter \code{POST /api/semester-subjects} mit derselben Kombination \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehler \\ \hline
             Post-Conditions & Kein zweiter Datensatz angelegt \\ \hline
@@ -450,7 +585,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & \code{semester_subjects}-Datensatz vorhanden \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und \code{semester_subjects}-Datensatz vorhanden \\ \hline
             Endpoint/Schritte & \code{POST /api/classes} mit \code{\{semesterSubjectId, name\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Klasse enth\"alt \code{semesterSubjectId} \\ \hline
             Post-Conditions & Datensatz in \code{classes} existiert \\ \hline
@@ -468,7 +603,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Klasse existiert \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Klasse existiert \\ \hline
             Endpoint/Schritte & \code{POST /api/tests} mit \code{\{classId, semesterSubjectId, name, date\}} \\ \hline
             Response (gekürzt) & \code{201 Created}; Test enth\"alt \code{classId, semesterSubjectId} \\ \hline
             Post-Conditions & Datensatz in \code{tests} existiert \\ \hline
@@ -486,9 +621,9 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Test und Student existieren \\ \hline
-            Endpoint/Schritte & \code{POST /api/grades} mit \code{\{studentId, testId, value\}} \\ \hline
-            Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{studentId, testId, value} \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Test und User existieren \\ \hline
+            Endpoint/Schritte & \code{POST /api/grades} mit \code{\{userId, testId, value\}} \\ \hline
+            Response (gekürzt) & \code{201 Created}; Grade enth\"alt \code{userId, testId, value} \\ \hline
             Post-Conditions & Datensatz in \code{grades} existiert \\ \hline
             Referenz & REQ-GRD-001 \\ \hline
         \end{tabularx}
@@ -504,8 +639,8 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Grade für (\code{studentId}, \code{testId}) existiert bereits \\ \hline
-            Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{studentId+testId} \\ \hline
+            Pre-Conditions & Admin-Token vorhanden und Grade für (\code{userId}, \code{testId}) existiert bereits \\ \hline
+            Endpoint/Schritte & Erneuter \code{POST /api/grades} mit gleichem \code{userId+testId} \\ \hline
             Response (gekürzt) & \code{409 Conflict} oder \code{400} mit Unique-Fehlermeldung \\ \hline
             Post-Conditions & Kein zweiter Datensatz für gleiche Kombination \\ \hline
             Referenz & REQ-GRD-002 \\ \hline
@@ -522,9 +657,9 @@ Max Mustermann | 4.75 | Informatik Test 1
             Status & Pass \\ \hline
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
-            Pre-Conditions & Gültiger JWT-Token vorhanden \\ \hline
-            Endpoint/Schritte & \code{GET /api/students} mit \code{Authorization: Bearer <token>} \\ \hline
-            Response (gekürzt) & \code{200 OK}; Liste der Studenten \\ \hline
+            Pre-Conditions & Admin-Token vorhanden \\ \hline
+            Endpoint/Schritte & \code{GET /api/semesters} mit \code{Authorization: Bearer <token>} \\ \hline
+            Response (gekürzt) & \code{200 OK}; Seite mit Semestern \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-001 \\ \hline
         \end{tabularx}
@@ -541,7 +676,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Kein \code{Authorization} Header \\ \hline
-            Endpoint/Schritte & \code{GET /api/students} ohne Token \\ \hline
+            Endpoint/Schritte & \code{GET /api/semesters} ohne Token \\ \hline
             Response (gekürzt) & \code{401 Unauthorized} \\ \hline
             Post-Conditions & Keine Änderungen an Daten \\ \hline
             Referenz & SEC-AUTH-002 \\ \hline
@@ -559,7 +694,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Datum/Tester & 2025-09-04 / Luca G. \\ \hline
             ENV & DEV \\ \hline
             Pre-Conditions & Benutzer mit \code{ROLE_USER} ohne Adminrechte \\ \hline
-            Endpoint/Schritte & \code{POST /api/students} mit \code{ROLE_USER} \\ \hline
+            Endpoint/Schritte & \code{POST /api/semesters} mit \code{ROLE_USER} \\ \hline
             Response (gekürzt) & \code{403 Forbidden} \\ \hline
             Post-Conditions & Kein Datensatz angelegt \\ \hline
             Referenz & SEC-AUTH-003 \\ \hline
@@ -583,7 +718,7 @@ Max Mustermann | 4.75 | Informatik Test 1
             Referenz & REQ-GRD-003 \\ \hline
         \end{tabularx}
     \end{small}
-    
+
     \subsubsection{T15 - Subject löschen mit Referenzen}
     \begin{small}
         \begin{tabularx}{\textwidth}{|L{3.2cm}|Y|}
@@ -601,32 +736,21 @@ Max Mustermann | 4.75 | Informatik Test 1
             Referenz & REQ-SUB-003 \\ \hline
         \end{tabularx}
     \end{small}
+    \subsection{Testdaten}
+    In diesem Repository stehen zwei HTTP-Dateien zur Verf\"ugung, mit denen sich die Testdaten einfach vorbereiten und alle
+    Testf\"alle ausf\"uhren lassen: \code{documentation/testcases}.\newline
+    F\"uhre zun\"achst \code{testdata-setup.http} aus, um die Basisdaten (z.\,B. Semester, Subject, Zuordnung, Klasse, Test)
+    anzulegen; anschliessend k\"onnen die einzelnen Testf\"alle direkt \"uber \code{testcase.http} gegen die laufende Anwendung
+    ausgef\"uhrt werden.\newline
+    Die Requests sind so vorbereitet, dass sie mit dem JetBrains HTTP Client (IDE) sofort lauff\"ahig sind und Token/IDs automatisch
+    in der Session hinterlegt werden.
+    
 
-    \subsection{Testdaten (Beispiel)}
-    \begin{lstlisting}[language=SQL]
--- Minimaler Datensatz fuer End-to-End Tests
-INSERT INTO semesters (
-  id,
-  name,
-  start_date,
-  end_date
-) VALUES (
-  gen_random_uuid(),
-  'HS2025',
-  '2025-09-01',
-  '2026-01-31'
-);
-
-INSERT INTO subjects (
-  id,
-  name
-) VALUES (
-  gen_random_uuid(),
-  'Mathematik'
-);
-    \end{lstlisting}
+    \newpage
 
 % ---------------- Fazit ----------------
+
+
     \section{Fazit \& Reflexion}
     Das Projekt hat gezeigt, wie eine relationale Datenbank modelliert und umgesetzt werden kann.
     Gut funktioniert hat die Modellierung der Entitäten und die Umsetzung der REST-API.
@@ -653,17 +777,46 @@ INSERT INTO subjects (
     Insgesamt hat das Projekt meine Stärken im Bereich Spring und Datenbank-Services bestätigt und
     gleichzeitig meinen Werkzeugkasten um wichtige Security- und Dokumentations-Bausteine erweitert.
 
+    Rückblickend war es zudem spannend, die gesamte Dokumentation mit \LaTeX{} zu erstellen. Die klare
+    Trennung von Inhalt und Formatierung, die sauberen Querverweise sowie die gute Unterstützung für
+    Code-Listings und Tabellen haben zu einer einheitlichen Ausarbeitung beigetragen.
+
+    Ein weiterer wichtiger Punkt war die Erstellung der CI/CD-Pipeline zur automatischen PDF-Generierung.
+    Diese Phase war zuweilen recht anstrengend: Von der korrekten Einrichtung der \LaTeX{}-Toolchain in
+    der Build-Umgebung über Paketabhängigkeiten bis hin zu Pfad- und Encoding-Themen gab es einige
+    Hürden. Nachdem alle Stolpersteine beseitigt waren, konnte die Pipeline schliesslich zuverlässig die
+    PDF-Dokumentation bauen – ein Ergebnis, das den Aufwand nachhaltig rechtfertigt und die Wartbarkeit
+    in Zukunft deutlich verbessert.
 % ---------------- Anhang ----------------
+
+    \newpage
+
     \section{Anhang}
 
     \subsection{SQL-Dump}
-    \textbf{TODO: Vollständiger SQL-Dump aller Tabellen anhängen}
+    Der vollständige SQL-Dump befindet sich im Ordner \code{documentation/dump} dieses Repositories
+    (\code{documentation/dump/backup_nv_final.sql}).\newline
+    Der Dump wurde mit folgendem Befehl erstellt:
+    \begin{lstlisting}[language=bash]
+pg_dump -h localhost -p 5432 -U postgres -d notenverwaltung -F p -f documentation/dump/backup_nv_final.sql
+    \end{lstlisting}
+
+    \subsubsection{SQL Schema}
+    Das vollständige CREATE-Skript (Flyway Migrationen) ist im Ordner\\ \code{src/main/resources/db/migration/} zu finden.
 
     \subsection{OpenAPI Dokumentation}
-    Die vollständige OpenAPI Dokumentation der REST-API befindet sich in der Datei \code{doc.json}.
+    Die vollständige OpenAPI/Swagger-Dokumentation der REST-API befindet sich im Ordner \code{documentation/swagger/documentation.json}.
     Swagger-UI ist unter \code{/api/public/docs} erreichbar.
 
-    \subsection{Screenshots}
-    \textbf{TODO: Screenshots der REST-API und SQL-Abfragen einfügen}
+    \subsection{Sourcecode und Release}
+    Der komplette Sourcecode ist öffentlich auf GitHub unter:\\
+    \url{https://github.com/Notenverwaltung-ch/Notenverwaltung}
+
+    In der finalen Abgabe liegt zusätzlich eine ZIP-Datei bei, die den vollständigen Sourcecode enthält.\\
+    Alternativ steht ein Release zum Download bereit:
+    \href{https://github.com/Notenverwaltung-ch/Notenverwaltung/releases/tag/25.1.0}{Release 25.1.0}
+
+    \subsection{Testfälle aus dem Testprotokoll}
+    Die HTTP Files um die Testfälle aus dem Testprotokoll ausführen zu können befinden sich im Ordner \code{documentation/testcases} dieses Repositories.
 
 \end{document}

@@ -84,15 +84,17 @@ public class AuthController {
     )
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
         if (userService.existsByUsername(registrationDTO.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Username is already taken");
+            throw new ch.notenverwaltung.exception.AlreadyExistsException("User with username '" + registrationDTO.getUsername() + "' already exists");
         }
 
-        User user = userService.createUser(
+        User user = userService.createUserWithDetails(
                 registrationDTO.getUsername(),
                 registrationDTO.getPassword(),
-                Collections.singletonList("ROLE_USER")
+                Collections.singletonList("ROLE_USER"),
+                registrationDTO.getFirstName(),
+                registrationDTO.getLastName(),
+                registrationDTO.getEmail(),
+                registrationDTO.getDateOfBirth()
         );
 
         String jwt = jwtTokenProvider.generateToken(user.getUsername());

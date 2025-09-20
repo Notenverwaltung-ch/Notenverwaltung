@@ -1,0 +1,16 @@
+### Login and get token
+# @name login
+POST http://localhost:8080/api/public/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "oR-3S6ybkjkkbkRS"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+### testdata
+POST http://localhost:8080/api/testdata/setup
+Authorization: Bearer {{token}}
+Content-Type: application/json

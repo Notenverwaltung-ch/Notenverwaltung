@@ -9,7 +9,6 @@ A Spring Boot REST application for managing student grades with JPA integration 
 - **PostgreSQL**: Database
 - **Flyway**: Database migrations
 - **Spring Security**: Authentication and authorization
-- **OAuth2**: Google authentication
 - **Docker**: Container for PostgreSQL
 - **Lombok**: Reduce boilerplate code
 - **JUnit & Spring Test**: Testing
@@ -30,21 +29,15 @@ The project follows a standard layered architecture:
 
 - Java 17 or higher
 - Docker and Docker Compose
-- Google OAuth2 credentials
 
 ### Setup
 
 1. Clone the repository
-2. Set environment variables for Google OAuth2:
-   ```
-   GOOGLE_CLIENT_ID=your_client_id
-   GOOGLE_CLIENT_SECRET=your_client_secret
-   ```
-3. Start the PostgreSQL database:
+2. Start the PostgreSQL database:
    ```
    docker-compose up -d
    ```
-4. Run the application:
+3. Run the application:
    ```
    ./gradlew bootRun
    ```
@@ -59,44 +52,74 @@ The project follows a standard layered architecture:
 
 ### Protected Endpoints (Authentication Required)
 
-#### Student Endpoints
+#### User Management (Admin only)
+- `GET /api/admin/users` (paged)
+- `GET /api/admin/users/active` (paged)
+- `POST /api/admin/users` (create user)
+- `PUT /api/admin/users/{username}/password` (change password)
+- `PUT /api/admin/users/{username}/active?active={true|false}` (activate/deactivate)
+- `POST /api/admin/users/{username}/roles` (grant role)
+- `DELETE /api/admin/users/{username}/roles/{role}` (revoke role)
+- `DELETE /api/admin/users/{username}` (delete user)
 
-- `GET /api/students`: Get all students
-- `GET /api/students/active`: Get all active students
-- `GET /api/students/{id}`: Get a student by ID
-- `POST /api/students`: Create a new student
-- `PUT /api/students/{id}`: Update a student
-- `DELETE /api/students/{id}`: Delete a student
+#### Semesters
+- `GET /api/semesters` (paged)
+- `GET /api/semesters/{id}`
+- `POST /api/semesters` (ADMIN)
+- `PUT /api/semesters/{id}` (ADMIN)
+- `DELETE /api/semesters/{id}` (ADMIN)
+
+#### Subjects
+- `GET /api/subjects` (paged)
+- `GET /api/subjects/{id}`
+- `POST /api/subjects` (ADMIN)
+- `PUT /api/subjects/{id}` (ADMIN)
+- `DELETE /api/subjects/{id}` (ADMIN)
+
+#### Classes
+- `GET /api/classes` (paged)
+- `GET /api/classes/{id}`
+- `POST /api/classes` (ADMIN)
+- `PUT /api/classes/{id}` (ADMIN)
+- `DELETE /api/classes/{id}` (ADMIN)
+
+#### Tests
+- `GET /api/tests` (paged)
+- `GET /api/tests/{id}`
+- `POST /api/tests` (ADMIN)
+- `PUT /api/tests/{id}` (ADMIN)
+- `DELETE /api/tests/{id}` (ADMIN)
+
+#### Grades
+- `GET /api/grades` (paged):
+  - Admins: all grades; supports optional filters: studentId, testId, valueMin, valueMax
+  - Users: only own grades
+- `GET /api/grades/{id}`: Admin any; Users only their own grade
+- `POST /api/grades` (ADMIN)
+- `PUT /api/grades/{id}` (ADMIN)
+- `DELETE /api/grades/{id}` (ADMIN)
 
 ## Authentication and Authorization
 
-The application supports two authentication methods and implements role-based access control.
+The application uses JWT-based authentication and implements role-based access control.
 
-### OAuth2 Authentication
-
-OAuth2 with Google is supported for authentication. This is useful for web applications that can redirect to Google's authentication page.
 
 ### JWT Token Authentication
 
-The application also supports JWT token-based authentication, which is more suitable for API clients and mobile applications.
+The application uses JWT token-based authentication, which is suitable for API clients and web frontends.
 
 ### Role-Based Access Control
 
 The application implements role-based access control with two roles:
 
-- **ROLE_USER**: Regular users who can view student data
-- **ROLE_ADMIN**: Administrators who can view, create, update, and delete student data
+- ROLE_USER: General users (students) who can read domain data.
+- ROLE_ADMIN: Administrators who can create, update, and delete domain data and manage users.
 
-#### Endpoint Access by Role
-
-| Endpoint | ROLE_USER | ROLE_ADMIN |
-|----------|-----------|------------|
-| GET /api/students | ✅ | ✅ |
-| GET /api/students/active | ✅ | ✅ |
-| GET /api/students/{id} | ✅ | ✅ |
-| POST /api/students | ❌ | ✅ |
-| PUT /api/students/{id} | ❌ | ✅ |
-| DELETE /api/students/{id} | ❌ | ✅ |
+Key rules:
+- Public endpoints under /api/public/** and /api/public/auth/** do not require a token.
+- Read endpoints (GET) on /api/semesters, /api/subjects, /api/classes, /api/tests require a valid token with either ROLE_USER or ROLE_ADMIN.
+- Write endpoints (POST, PUT, DELETE) on those resources require ROLE_ADMIN.
+- All /api/admin/users/** endpoints require ROLE_ADMIN.
 
 #### User Registration
 

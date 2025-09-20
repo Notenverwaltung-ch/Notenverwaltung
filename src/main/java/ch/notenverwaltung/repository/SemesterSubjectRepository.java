@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface SemesterSubjectRepository extends JpaRepository<SemesterSubject, UUID> {
+    boolean existsBySemester_IdAndSubject_Id(UUID semesterId, UUID subjectId);
 }

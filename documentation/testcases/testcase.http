@@ -1,0 +1,197 @@
+### Use dev env credentials. Run testdata-setup.http first to create base data.
+
+### T1 - Create user (valid data)
+POST http://localhost:8080/api/admin/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "newpassword",
+  "roles": ["USER"]
+}
+
+### T2 - Create user (missing required fields) -> expect 400
+POST http://localhost:8080/api/admin/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+}
+
+### T3 - Create semester, then list semesters
+POST http://localhost:8080/api/semesters
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "FS2026",
+  "startDate": "2026-02-01",
+  "endDate": "2026-06-30"
+}
+### 3 - list semesters
+GET http://localhost:8080/api/semesters?page=0&size=10
+Authorization: Bearer {{token}}
+
+### T4 - Subject duplicate name (expect 409/400 depending on validation)
+POST http://localhost:8080/api/subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mathematik"
+}
+
+POST http://localhost:8080/api/subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mathematik"
+}
+
+### T5 - Create SemesterSubject mapping
+# Requires semesterId and subjectId; if you ran testdata-setup.http, these are set.
+POST http://localhost:8080/api/semester-subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterId": "{{semesterId}}",
+  "subjectId": "{{subjectId}}"
+}
+
+> {% client.global.set("semesterSubjectId", response.body && response.body.id ? response.body.id : client.global.get("semesterSubjectId")); %}
+
+### T6 - Duplicate SemesterSubject (expect conflict/validation error)
+POST http://localhost:8080/api/semester-subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterId": "{{semesterId}}",
+  "subjectId": "{{subjectId}}"
+}
+
+### T7 - Create Class and then update it
+# Create
+POST http://localhost:8080/api/classes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterSubjectId": "{{semesterSubjectId}}"
+}
+
+> {% client.global.set("classId", response.body.id); %}
+PUT http://localhost:8080/api/classes/{{classId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semesterSubjectId": "{{semesterSubjectId}}"
+}
+
+### T8 - Create Test and then list/get/delete
+# Create
+POST http://localhost:8080/api/tests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mathematik Test 2",
+  "semesterSubjectId": "{{semesterSubjectId}}",
+  "classId": "{{classId}}"
+}
+
+> {% client.global.set("testId2", response.body.id); %}
+
+### T8 List
+GET http://localhost:8080/api/tests?page=0&size=10
+Authorization: Bearer {{token}}
+
+### T8 Get by id
+GET http://localhost:8080/api/tests/{{testId2}}
+Authorization: Bearer {{token}}
+
+### T8 Update
+PUT http://localhost:8080/api/tests/{{testId2}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mathematik Test 2 - Updated",
+  "semesterSubjectId": "{{semesterSubjectId}}",
+  "classId": "{{classId}}"
+}
+
+### T8 Delete
+DELETE http://localhost:8080/api/tests/{{testId2}}
+Authorization: Bearer {{token}}
+
+### T9 - Create Grade for Student+Test
+GET http://localhost:8080/api/admin/users?page=0&size=50
+Authorization: Bearer {{token}}
+
+> {% 
+const page = response.body; 
+if (page && Array.isArray(page.content)) {
+  const match = page.content.find(it => it.username === 'admin');
+  if (match) {
+    client.global.set('studentId', match.id);
+  }
+}
+%}
+
+### T9 - Create a grade for that student and the previously created test
+POST http://localhost:8080/api/grades
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "studentId": "{{studentId}}",
+  "testId": "{{testId2}}",
+  "value": 5.0,
+  "weight": 1.0
+}
+
+> {% if (response.body && response.body.id) { client.global.set('gradeId', response.body.id); } %}
+
+### T10 - Duplicate Grade for same Student+Test (expect 409/400)
+POST http://localhost:8080/api/grades
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "studentId": "{{studentId}}",
+  "testId": "{{testId2}}",
+  "value": 5.0,
+  "weight": 1.0
+}
+
+### T11 - Access with valid JWT token
+GET http://localhost:8080/api/semesters?page=0&size=10
+Authorization: Bearer {{token}}
+
+### T12 - Access without token (expect 403)
+GET http://localhost:8080/api/semesters?page=0&size=10
+
+### T13 - Insufficient role (USER tries to create semester -> expect 401)
+# Login as regular USER (registered in testdata-setup) to get userToken
+POST http://localhost:8080/api/public/auth/login
+Content-Type: application/json
+
+{
+  "username": "test@test.ch",
+  "password": "123456"
+}
+
+> {% if (response.body && response.body.token) { client.global.set('userToken', response.body.token); } %}
+
+### T14 - Paging/Filter Grades
+GET http://localhost:8080/api/grades?page=0&size=10&valueMin=4.0
+Authorization: Bearer {{token}}
+
+### T15 - Delete subject with references (expect conflict)
+DELETE http://localhost:8080/api/subjects/{{subjectId}}
+Authorization: Bearer {{token}}

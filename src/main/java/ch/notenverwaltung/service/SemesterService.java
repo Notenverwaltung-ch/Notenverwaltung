@@ -36,6 +36,9 @@ public class SemesterService {
 
     @Transactional
     public SemesterDTO create(SemesterDTO dto) {
+        if (semesterRepository.existsByName(dto.getName())) {
+            throw new ch.notenverwaltung.exception.AlreadyExistsException("Semester with name '" + dto.getName() + "' already exists");
+        }
         Semester entity = Semester.builder()
                 .name(dto.getName())
                 .startDate(dto.getStartDate())

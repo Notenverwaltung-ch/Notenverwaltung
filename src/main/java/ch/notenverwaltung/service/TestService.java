@@ -43,6 +43,8 @@ public class TestService {
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with id: " + dto.getClassId()));
         TestEntity entity = TestEntity.builder()
                 .name(dto.getName())
+                .comment(dto.getComment())
+                .date(dto.getDate())
                 .semesterSubject(ss)
                 .schoolClass(sc)
                 .build();
@@ -54,6 +56,10 @@ public class TestService {
         TestEntity entity = testRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Test not found with id: " + id));
         entity.setName(dto.getName());
+        entity.setComment(dto.getComment());
+        if (dto.getDate() != null) {
+            entity.setDate(dto.getDate());
+        }
         if (dto.getSemesterSubjectId() != null) {
             entity.setSemesterSubject(semesterSubjectRepository.findById(dto.getSemesterSubjectId())
                     .orElseThrow(() -> new EntityNotFoundException("SemesterSubject not found with id: " + dto.getSemesterSubjectId())));
@@ -77,6 +83,8 @@ public class TestService {
         return TestDTO.builder()
                 .id(t.getId())
                 .name(t.getName())
+                .comment(t.getComment())
+                .date(t.getDate())
                 .semesterSubjectId(t.getSemesterSubject().getId())
                 .classId(t.getSchoolClass().getId())
                 .build();
