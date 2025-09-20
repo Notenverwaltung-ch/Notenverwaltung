@@ -288,6 +288,18 @@ jobs:
           name: notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}
           path: frontend/dist/frontend-notenverwaltung
 
+      - name: Create web app dist zip
+        run: |
+          cd frontend/dist
+          zip -r "../../notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}.zip" frontend-notenverwaltung
+        shell: bash
+
+      - name: Upload web app dist zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-frontend-dist-zip-${{ needs.compute-version.outputs.version }}
+          path: notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}.zip
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
