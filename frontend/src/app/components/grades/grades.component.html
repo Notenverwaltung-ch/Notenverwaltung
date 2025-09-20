@@ -2,7 +2,7 @@
   <h1>Noten</h1>
 
   <section class="card">
-    <h2>Note hinzufügen</h2>
+    <h2>Note erstellen</h2>
     <form [formGroup]="form" (ngSubmit)="onAdd()" class="grid">
       <ng-container *ngIf="isAdmin; else noStudentSelection">
         <label>
@@ -25,18 +25,20 @@
       </label>
       <label>
         <span>Wert*</span>
-        <input type="number" step="0.01" formControlName="value" required />
+        <input type="number" step="0.01" formControlName="value" required/>
       </label>
       <label>
         <span>Gewichtung*</span>
-        <input type="number" step="0.01" formControlName="weight" />
+        <input type="number" step="0.01" formControlName="weight"/>
       </label>
       <label class="col-span-2">
         <span>Bemerkung</span>
-        <input formControlName="comment" />
+        <input formControlName="comment"/>
       </label>
       <div class="actions col-span-2">
-        <button class="btn" type="submit" [disabled]="form.invalid || adding">{{ adding ? 'Wird hinzugefügt...' : 'Hinzufügen' }}</button>
+        <button class="btn" type="submit"
+                [disabled]="form.invalid || adding">{{ adding ? 'Wird erstellt...' : 'Erstellen' }}
+        </button>
       </div>
     </form>
     <p class="error" *ngIf="error">{{ error }}</p>
@@ -49,7 +51,7 @@
       <h2>Notenliste</h2>
       <div class="spacer"></div>
       <label *ngIf="isAdmin">
-        <input type="checkbox" [(ngModel)]="showOnlyOwn" (change)="pageIndex=0; load()" /> Nur eigene anzeigen
+        <input type="checkbox" [(ngModel)]="showOnlyOwn" (change)="pageIndex=0; load()"/> Nur eigene anzeigen
       </label>
       <label>Seitengrösse
         <select [(ngModel)]="size" (change)="pageIndex=0; load()">
@@ -66,22 +68,26 @@
       <thead>
       <tr>
         <th class="sortable" (click)="toggleSort('value')">
-          Wert <span class="sort-indicator" *ngIf="sortField==='value'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Wert <span class="sort-indicator" *ngIf="sortField==='value'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('weight')">
-          Gewichtung <span class="sort-indicator" *ngIf="sortField==='weight'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Gewichtung <span class="sort-indicator"
+                           *ngIf="sortField==='weight'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('comment')">
-          Bemerkung <span class="sort-indicator" *ngIf="sortField==='comment'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Bemerkung <span class="sort-indicator"
+                          *ngIf="sortField==='comment'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('studentUsername')">
-          Schüler <span class="sort-indicator" *ngIf="sortField==='studentUsername'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Schüler <span class="sort-indicator"
+                        *ngIf="sortField==='studentUsername'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('testName')">
-          Test <span class="sort-indicator" *ngIf="sortField==='testName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Test <span class="sort-indicator" *ngIf="sortField==='testName'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th class="sortable" (click)="toggleSort('createdOn')">
-          Erstellt <span class="sort-indicator" *ngIf="sortField==='createdOn'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+          Erstellt <span class="sort-indicator"
+                         *ngIf="sortField==='createdOn'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
         </th>
         <th>Aktionen</th>
       </tr>
@@ -95,8 +101,9 @@
         <td>{{ g.testName }}</td>
         <td>{{ g.createdOn | date:'yyyy-MM-dd HH:mm' }}</td>
         <td>
-          <button class="btn btn-danger" *ngIf="isAdmin || isOwner(g)" (click)="onDelete(g)" [disabled]="deletingId===g.id">
-            {{ deletingId===g.id ? 'Wird gelöscht...' : 'Löschen' }}
+          <button class="btn btn-danger" *ngIf="isAdmin || isOwner(g)" (click)="onDelete(g)"
+                  [disabled]="deletingId===g.id">
+            {{ deletingId === g.id ? 'Wird gelöscht...' : 'Löschen' }}
           </button>
         </td>
       </tr>
@@ -106,7 +113,9 @@
     <div class="pagination">
       <button class="btn" (click)="prev()" [disabled]="page?.number===0 || loading">Zurück</button>
       <span>Seite {{ (page?.number ?? 0) + 1 }} / {{ page?.totalPages ?? 1 }}</span>
-      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= (page?.totalPages ?? 1) - 1 || loading">Weiter</button>
+      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= (page?.totalPages ?? 1) - 1 || loading">
+        Weiter
+      </button>
     </div>
 
     <p *ngIf="loading">Wird geladen...</p>

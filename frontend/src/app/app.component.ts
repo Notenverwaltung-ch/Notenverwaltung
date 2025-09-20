@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { AuthService } from './services/auth.service';
+import {Component, inject} from '@angular/core';
+import {RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
+import {CommonModule} from '@angular/common';
+import {AuthService} from './services/auth.service';
 
 @Component({
   selector: 'nv-root',
@@ -13,5 +13,8 @@ import { AuthService } from './services/auth.service';
 export class AppComponent {
   title = 'Notenverwaltung';
   auth = inject(AuthService);
-  logout() { this.auth.logout(); }
+
+  logout() {
+    this.auth.logout();
+  }
 }

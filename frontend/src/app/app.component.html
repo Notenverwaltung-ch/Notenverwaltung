@@ -5,6 +5,7 @@
     <nav class="nav">
       <a routerLink="/welcome" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Willkommen</a>
       <a *ngIf="auth.isAuthenticated()" routerLink="/grades" routerLinkActive="active">Noten</a>
+      <a *ngIf="auth.isAdmin()" routerLink="/users" routerLinkActive="active">Benutzer</a>
     </nav>
 
     <span class="spacer"></span>
@@ -19,5 +20,5 @@
   </div>
 </header>
 <main class="main">
-  <router-outlet />
+  <router-outlet/>
 </main>

@@ -2,7 +2,8 @@
   <div class="appbar-spacer"></div>
   <section class="hero card-elevated">
     <h1>Notenverwaltung</h1>
-    <p *ngIf="!auth.isAuthenticated()">Verwalte deine Noten effizient, sicher und überall. Melde dich an oder registriere dich, um zu starten.</p>
+    <p *ngIf="!auth.isAuthenticated()">Verwalte deine Noten effizient, sicher und überall. Melde dich an oder
+      registriere dich, um zu starten.</p>
     <h2 *ngIf="auth.isAuthenticated()">Willkommen, {{ username || 'Benutzer' }}!</h2>
     <div class="actions" *ngIf="!auth.isAuthenticated()">
       <a class="btn btn-primary" routerLink="/login">Anmelden</a>

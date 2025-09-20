@@ -1,9 +1,9 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { environment } from '../../environments/environment';
-import { Observable, tap } from 'rxjs';
+import {inject, Injectable, PLATFORM_ID} from '@angular/core';
+import {isPlatformBrowser} from '@angular/common';
+import {HttpClient, HttpResponse} from '@angular/common/http';
+import {Router} from '@angular/router';
+import {environment} from '../../environments/environment';
+import {Observable, tap} from 'rxjs';
 
 export interface AuthRequestDTO {
   username: string;
@@ -14,6 +14,9 @@ export interface UserRegistrationDTO {
   username: string;
   password: string;
   email?: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
 }
 
 export interface AuthResponseDTO {
@@ -22,7 +25,7 @@ export interface AuthResponseDTO {
   expiresIn?: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
@@ -36,25 +39,35 @@ export class AuthService {
 
   private setToken(token: string): void {
     if (this.hasStorage()) {
-      try { localStorage.setItem(this.tokenKey, token); } catch {}
+      try {
+        localStorage.setItem(this.tokenKey, token);
+      } catch {
+      }
     }
   }
 
   private removeToken(): void {
     if (this.hasStorage()) {
-      try { localStorage.removeItem(this.tokenKey); } catch {}
+      try {
+        localStorage.removeItem(this.tokenKey);
+      } catch {
+      }
     }
   }
 
   getToken(): string | null {
     if (this.hasStorage()) {
-      try { return localStorage.getItem(this.tokenKey); } catch { return null; }
+      try {
+        return localStorage.getItem(this.tokenKey);
+      } catch {
+        return null;
+      }
     }
     return null;
   }
 
   login(payload: AuthRequestDTO): Observable<HttpResponse<AuthResponseDTO>> {
-    return this.http.post<AuthResponseDTO>(`${this.baseUrl}/public/auth/login`, payload, { observe: 'response' as const }).pipe(
+    return this.http.post<AuthResponseDTO>(`${this.baseUrl}/public/auth/login`, payload, {observe: 'response' as const}).pipe(
       tap(response => {
         const res = response.body as AuthResponseDTO | null;
         let token: string | undefined = res?.token;
@@ -72,7 +85,7 @@ export class AuthService {
   }
 
   register(payload: UserRegistrationDTO): Observable<HttpResponse<AuthResponseDTO>> {
-    return this.http.post<AuthResponseDTO>(`${this.baseUrl}/public/auth/register`, payload, { observe: 'response' as const }).pipe(
+    return this.http.post<AuthResponseDTO>(`${this.baseUrl}/public/auth/register`, payload, {observe: 'response' as const}).pipe(
       tap(response => {
         const res = response.body as AuthResponseDTO | null;
         let token: string | undefined = res?.token;

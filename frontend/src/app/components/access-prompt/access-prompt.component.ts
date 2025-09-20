@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { LoginComponent } from '../login/login.component';
+import {Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterLink} from '@angular/router';
+import {LoginComponent} from '../login/login.component';
 
 @Component({
   selector: 'nv-access-prompt',

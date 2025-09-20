@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -21,4 +22,9 @@ public class AdminCreateUserRequest {
     private String password;
 
     private List<String> roles;
+
+    private String firstName;
+    private String lastName;
+    private String email;
+    private LocalDate dateOfBirth;
 }

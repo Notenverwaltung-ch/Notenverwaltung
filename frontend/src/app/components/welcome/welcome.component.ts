@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { GradeService, GradeViewDTO, Page } from '../../services/grade.service';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterLink} from '@angular/router';
+import {AuthService} from '../../services/auth.service';
+import {GradeService, GradeViewDTO, Page} from '../../services/grade.service';
 
 @Component({
   selector: 'nv-welcome',
@@ -16,7 +16,8 @@ export class WelcomeComponent implements OnInit {
   loadingLatest = false;
   latestError: string | null = null;
 
-  constructor(public auth: AuthService, private grades: GradeService) {}
+  constructor(public auth: AuthService, private grades: GradeService) {
+  }
 
   ngOnInit(): void {
     if (this.auth.isAuthenticated()) {
@@ -24,12 +25,14 @@ export class WelcomeComponent implements OnInit {
     }
   }
 
-  get username(): string | null { return this.auth.getUsername(); }
+  get username(): string | null {
+    return this.auth.getUsername();
+  }
 
   private loadLatest() {
     this.loadingLatest = true;
     this.latestError = null;
-    this.grades.listViewOwn(0, 3, { field: 'createdOn', dir: 'desc' }).subscribe({
+    this.grades.listViewOwn(0, 3, {field: 'createdOn', dir: 'desc'}).subscribe({
       next: (page: Page<GradeViewDTO>) => {
         this.latestGrades = page.content ?? [];
         this.loadingLatest = false;

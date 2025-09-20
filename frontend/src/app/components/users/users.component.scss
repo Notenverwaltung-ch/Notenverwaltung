@@ -6,7 +6,16 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .col-span-2 {
+    grid-column: span 1;
+  }
 }
 
 .col-span-2 {
@@ -115,11 +124,11 @@
   text-align: left;
 }
 
-.table th, .table td {
+.user-table th, .user-table td {
   border-right: 1px solid #e5e7eb;
 }
 
-.table th:last-child, .table td:last-child {
+.user-table th:last-child, .user-table td:last-child {
   border-right: none;
 }
 
@@ -136,4 +145,31 @@
   margin-left: 4px;
   font-size: 12px;
   color: #6b7280;
+}
+
+
+.roles {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F2F2F7;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.chip-remove {
+  padding: 2px 6px;
+  border-radius: 12px;
+  background: transparent;
+  color: #B3261E;
+}
+
+.danger {
+  color: #c62828;
 }

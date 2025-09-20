@@ -76,7 +76,16 @@ public class AdminUserController {
         if (userService.existsByUsername(request.getUsername())) {
             throw new ch.notenverwaltung.exception.AlreadyExistsException("User with username '" + request.getUsername() + "' already exists");
         }
-        User created = userService.createUser(request.getUsername(), request.getPassword(), roles);
+
+        User created = userService.createUserWithDetails(
+                request.getUsername(),
+                request.getPassword(),
+                roles,
+                request.getFirstName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getDateOfBirth()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

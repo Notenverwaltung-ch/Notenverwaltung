@@ -1,8 +1,8 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import {Component, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
+import {Router, RouterLink} from '@angular/router';
+import {AuthService} from '../../services/auth.service';
 
 @Component({
   selector: 'nv-register',
@@ -18,7 +18,10 @@ export class RegisterComponent {
 
   form = this.fb.nonNullable.group({
     username: ['', [Validators.required]],
+    firstName: [''],
+    lastName: [''],
     email: ['', [Validators.email]],
+    dateOfBirth: [''],
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
@@ -29,8 +32,15 @@ export class RegisterComponent {
     this.error = null;
     if (this.form.invalid) return;
     this.loading = true;
-    const { username, email, password } = this.form.getRawValue();
-    this.auth.register({ username, email: email || undefined, password }).subscribe({
+    const {username, email, password, firstName, lastName, dateOfBirth} = this.form.getRawValue();
+    this.auth.register({
+      username,
+      email: email || undefined,
+      password,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      dateOfBirth: dateOfBirth || undefined
+    }).subscribe({
       next: () => {
         this.loading = false;
         this.router.navigate(['/welcome']);
