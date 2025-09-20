@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 @Service
 public class JwtTokenProvider {
 
-    @Value("${spring.jwt.secret}")
+    @Value("${spring.jwt.secret:${JWT_SECRET:defaultSecretKeyForProductionOverride}}")
     private String secret;
 
-    @Value("${spring.jwt.expiration}")
+    @Value("${spring.jwt.expiration:${JWT_EXPIRATION:86400000}}")
     private long expiration;
 
     private Key getSigningKey() {
