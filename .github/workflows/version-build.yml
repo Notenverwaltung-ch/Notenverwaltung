@@ -123,7 +123,7 @@ jobs:
           path: ${{ steps.jars.outputs.dir }}
 
   latex:
-    name: Build documentation PDF
+    name: Build documentation PDFs
     needs: compute-version
     runs-on: ubuntu-latest
     steps:
@@ -132,37 +132,65 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build PDF with latex-action
-        uses: xu-cheng/latex-action@v3
-        with:
-          root_file: documentation.tex
-          working_directory: documentation
-          latexmk_use_lualatex: false
-          latexmk_use_xelatex: false
-          extra_system_packages: ghostscript
-          args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
-          pre_compile: |
-            tlmgr update --self || true
-            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array pdflscape tikz || true
-      - name: Prepare version-suffixed PDF
-        if: always()
+      - name: Install TeX Live packages
         shell: bash
         run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-pictures texlive-lang-german latexmk ghostscript
+
+      - name: Build all .tex files
+        id: buildtex
+        shell: bash
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
           set -euo pipefail
-          SRC="documentation/documentation.pdf"
-          if [ ! -f "$SRC" ]; then
-            echo "PDF not found: $SRC" >&2
-            ls -al documentation || true
+          shopt -s nullglob
+          outdir="documentation/build"
+          mkdir -p "$outdir"
+          declare -a built
+          # Iterate .tex files that are standalone (contain \documentclass) and exclude asset directories
+          while IFS= read -r -d '' file; do
+            # Filter by content: only build if it contains \documentclass
+            if ! grep -q '\\documentclass' "$file"; then
+              echo "Skip (no \\documentclass): $file"
+              continue
+            fi
+            rel="${file#documentation/}"               # e.g., documentation.tex or deployment/deployment.tex
+            base="$(basename "$file" .tex)"           # e.g., documentation or deployment
+            dir="$(dirname "$rel")"                   # e.g., . or deployment
+            workdir="documentation/${dir}"
+            echo "==> Building $rel in $workdir"
+            (
+              cd "$workdir"
+              latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error "$base.tex"
+            )
+            # Source PDF location after build
+            srcpdf="documentation/${dir}/${base}.pdf"
+            if [ ! -f "$srcpdf" ]; then
+              echo "PDF not found after build: $srcpdf" >&2
+              exit 1
+            fi
+            outpdf="$outdir/${base}-${VERSION}.pdf"
+            cp "$srcpdf" "$outpdf"
+            built+=("$outpdf")
+          done < <(find documentation -type f -name "*.tex" -print0 | xargs -0 -I{} bash -lc 'p="{}"; case "$p" in */images/*|*/diagrams/*|*/dump/*|*/swagger/*|*/testcases/*) exit 0;; esac; echo "$p"')
+
+          if [ ${#built[@]} -eq 0 ]; then
+            echo "No .tex files found to build under documentation/" >&2
             exit 1
           fi
-          cp "$SRC" "documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf"
 
-      - name: Upload PDF artifact
+          printf "Built PDFs:\n"
+          printf ' - %s\n' "${built[@]}"
+          echo "outdir=$outdir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload PDF artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
-          path: documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf
+          path: ${{ steps.buildtex.outputs.outdir }}
 
   docker:
     name: Build and push Docker image
