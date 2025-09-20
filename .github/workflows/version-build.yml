@@ -100,24 +100,20 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Locate built jars and prepare artifact name
+      - name: Collect app.jar artifact
         id: jars
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
           mkdir -p upload
-          for f in build/libs/*.jar; do
-            base="notenverwaltung-jars-${VERSION}"
-            if [[ "$f" =~ (-plain|-sources|-javadoc)\.jar$ ]]; then
-              classifier=$(echo "$f" | sed -E 's/.*(-plain|-sources|-javadoc)\.jar/\1/')
-              cp "$f" "upload/${base}${classifier}.jar"
-            else
-              cp "$f" "upload/${base}.jar"
-            fi
-          done
+          if [ ! -f build/libs/app.jar ]; then
+            echo "Expected build/libs/app.jar not found" >&2
+            ls -al build/libs || true
+            exit 1
+          fi
+          cp build/libs/app.jar "upload/notenverwaltung-app-${VERSION}.jar"
           echo "dir=upload" >> "$GITHUB_OUTPUT"
 
       - name: Upload jars artifact
@@ -192,25 +188,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download jar artifacts only
+      - name: Download app jar artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: notenverwaltung-jars*
+          name: notenverwaltung-jars-${{ needs.compute-version.outputs.version }}
           path: build/libs
-          merge-multiple: true
 
       - name: Normalize JAR filename and verify presence
         run: |
           mkdir -p build/libs
           shopt -s nullglob
-          JAR_CANDIDATES=(build/libs/*.jar build/libs/**/*.jar)
-          COUNT=${#JAR_CANDIDATES[@]}
-          if [ "$COUNT" -eq 0 ]; then
-            find build -maxdepth 3 -type f -name "*.jar" -print || true
+          if [ ! -f build/libs/notenverwaltung-app-${{ needs.compute-version.outputs.version }}.jar ]; then
+            echo "Downloaded app jar not found" >&2
+            ls -al build/libs || true
             exit 1
           fi
-          SRC_JAR="${JAR_CANDIDATES[0]}"
-          cp "$SRC_JAR" build/libs/app.jar
+          cp "build/libs/notenverwaltung-app-${{ needs.compute-version.outputs.version }}.jar" build/libs/app.jar
           cp build/libs/app.jar ./app.jar
         shell: bash
 
