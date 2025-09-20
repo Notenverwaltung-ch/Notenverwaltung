@@ -12,7 +12,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the prebuilt Angular app into Nginx html directory
 # The workflow builds to frontend/dist/frontend-notenverwaltung
-COPY dist/frontend-notenverwaltung/ /usr/share/nginx/html/
+COPY dist/frontend-notenverwaltung/browser/ /usr/share/nginx/html/
 
 # Healthcheck (optional)
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost/ || exit 1
