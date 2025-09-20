@@ -231,9 +231,72 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
+  docker-frontend:
+    name: Build and push Frontend Docker image
+    needs: [compute-version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Angular app (production)
+        working-directory: frontend
+        run: npx ng build --configuration=production
+
+      - name: Upload frontend dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}
+          path: frontend/dist/frontend-notenverwaltung
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags
+        id: imgfe
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "primary=ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "latest=ghcr.io/${OWNER_LC}/notenverwaltung-frontend:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.imgfe.outputs.primary }}
+            ${{ steps.imgfe.outputs.latest }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
   release:
     name: Create GitHub Release with artifacts
-    needs: [build-and-tag, compute-version, latex]
+    needs: [build-and-tag, compute-version, latex, docker-frontend]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
