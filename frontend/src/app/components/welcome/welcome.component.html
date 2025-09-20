@@ -1,0 +1,68 @@
+<div class="welcome">
+  <div class="appbar-spacer"></div>
+  <section class="hero card-elevated">
+    <h1>Notenverwaltung</h1>
+    <p *ngIf="!auth.isAuthenticated()">Verwalte deine Noten effizient, sicher und überall. Melde dich an oder
+      registriere dich, um zu starten.</p>
+    <h2 *ngIf="auth.isAuthenticated()">Willkommen, {{ username || 'Benutzer' }}!</h2>
+    <div class="actions" *ngIf="!auth.isAuthenticated()">
+      <a class="btn btn-primary" routerLink="/login">Anmelden</a>
+      <a class="btn btn-tonal" routerLink="/register">Registrieren</a>
+    </div>
+    <div class="actions" *ngIf="auth.isAuthenticated()">
+      <a class="btn btn-primary" routerLink="/welcome">Zur Willkommensseite</a>
+    </div>
+  </section>
+
+  <section class="card-elevated latest-grades" *ngIf="auth.isAuthenticated()">
+    <div class="card-header">
+      <h3>Letzte Noten</h3>
+      <div class="spacer"></div>
+    </div>
+
+    <ng-container *ngIf="!loadingLatest; else loadingTpl">
+      <p class="error" *ngIf="latestError">{{ latestError }}</p>
+
+      <div *ngIf="latestGrades?.length; else emptyTpl" class="mini-cards">
+        <div class="mini-card" *ngFor="let g of latestGrades">
+          <div class="mini-card__top">
+            <div class="mini-card__grade">{{ g.value }}</div>
+            <div class="mini-card__test">{{ g.testName || 'Ohne Test' }}</div>
+          </div>
+          <div class="mini-card__bottom">
+            <div class="mini-card__comment">{{ g.comment || 'Keine Bemerkung' }}</div>
+            <div class="mini-card__date">{{ g.createdOn | date:'dd.MM.yyyy HH:mm' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="center">
+        <a class="btn btn-tonal" routerLink="/grades">Alle Noten ansehen</a>
+      </div>
+    </ng-container>
+
+    <ng-template #loadingTpl>
+      <p>Wird geladen...</p>
+    </ng-template>
+    <ng-template #emptyTpl>
+      <div class="empty">
+        <p>Du hast noch keine Noten.</p>
+      </div>
+    </ng-template>
+  </section>
+
+  <section class="features">
+    <div class="feature card-elevated">
+      <h3>Übersicht</h3>
+      <p>Schneller Überblick über alle Fächer und Noten.</p>
+    </div>
+    <div class="feature card-elevated">
+      <h3>Sicherheit</h3>
+      <p>JWT-basierte Authentifizierung für deine Daten.</p>
+    </div>
+    <div class="feature card-elevated">
+      <h3>Modern</h3>
+      <p>Schlankes, modernes Design inspiriert von Material.</p>
+    </div>
+  </section>
+</div>

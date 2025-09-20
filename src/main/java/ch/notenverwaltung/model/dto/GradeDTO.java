@@ -3,6 +3,7 @@ package ch.notenverwaltung.model.dto;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -16,4 +17,5 @@ public class GradeDTO {
     private String comment;
     private UUID studentId;
     private UUID testId;
+    private LocalDateTime createdOn;
 }

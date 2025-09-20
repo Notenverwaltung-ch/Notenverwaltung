@@ -1,0 +1,124 @@
+<div class="container" *ngIf="auth.isAdmin(); else noAccess">
+  <h1>Benutzerverwaltung</h1>
+
+  <section class="card">
+    <h2>Benutzer erstellen</h2>
+    <form class="grid" [formGroup]="createForm" (ngSubmit)="onCreate()">
+      <label>
+        <span>Username</span>
+        <input type="text" formControlName="username" placeholder="Benutzername eingeben"/>
+      </label>
+      <label>
+        <span>Passwort</span>
+        <input type="password" formControlName="password" placeholder="Passwort eingeben"/>
+      </label>
+      <label>
+        <span>Vorname</span>
+        <input type="text" formControlName="firstName" placeholder="Vorname"/>
+      </label>
+      <label>
+        <span>Nachname</span>
+        <input type="text" formControlName="lastName" placeholder="Nachname"/>
+      </label>
+      <label>
+        <span>E-Mail</span>
+        <input type="email" formControlName="email" placeholder="E-Mail"/>
+      </label>
+      <label>
+        <span>Geburtsdatum</span>
+        <input type="date" formControlName="dateOfBirth"/>
+      </label>
+      <label class="col-span-2">
+        <span>Rollen (kommagetrennt)</span>
+        <input type="text" formControlName="roles" placeholder="ROLE_USER, ROLE_ADMIN"/>
+      </label>
+      <div class="actions col-span-2">
+        <button class="btn" type="submit"
+                [disabled]="creating || createForm.invalid">{{ creating ? 'Erstellen...' : 'Erstellen' }}
+        </button>
+        <span class="success" *ngIf="success">{{ success }}</span>
+        <span class="error" *ngIf="error">{{ error }}</span>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Benutzerliste</h2>
+      <div class="spacer"></div>
+      <label>Seitengrösse
+        <select [(ngModel)]="size" (change)="pageIndex=0; load()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="error" *ngIf="listError">{{ listError }}</div>
+
+    <table class="table user-table" *ngIf="page?.content?.length">
+      <thead>
+      <tr>
+        <th class="sortable" (click)="toggleSort('username')">
+          Benutzername <span class="sort-indicator"
+                             *ngIf="sortField==='username'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('firstName')">
+          Vorname <span class="sort-indicator"
+                        *ngIf="sortField==='firstName'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('lastName')">
+          Nachname <span class="sort-indicator"
+                         *ngIf="sortField==='lastName'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('email')">
+          E-Mail <span class="sort-indicator" *ngIf="sortField==='email'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('active')">
+          Aktiv <span class="sort-indicator" *ngIf="sortField==='active'">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th>Rollen</th>
+        <th>Aktionen</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let u of page?.content">
+        <td>{{ u.username }}</td>
+        <td>{{ u.firstName || '—' }}</td>
+        <td>{{ u.lastName || '—' }}</td>
+        <td>{{ u.email || '—' }}</td>
+        <td>{{ u.active ? 'Ja' : 'Nein' }}</td>
+        <td>
+          <div class="roles">
+            <span *ngFor="let r of (u.roles || [])" class="role-chip">{{ r }}</span>
+            <span *ngIf="!u.roles || u.roles.length===0">—</span>
+          </div>
+        </td>
+        <td>
+          <button type="button" class="btn" (click)="onChangePassword(u)">Passwort ändern</button>
+          <button type="button" class="btn" (click)="onToggleActive(u)">{{ u.active ? 'Deaktivieren' : 'Aktivieren' }}
+          </button>
+          <button type="button" class="btn" (click)="onEditRoles(u)">Rollen bearbeiten</button>
+          <button type="button" class="btn danger" (click)="onDelete(u)" [disabled]="deletingUsername===u.username">
+            Löschen
+          </button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <button class="btn" (click)="prev()" [disabled]="(page?.number ?? 0) === 0">Zurück</button>
+      <span>Seite {{ (page?.number ?? 0) + 1 }} / {{ page?.totalPages ?? 1 }}</span>
+      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= ((page?.totalPages ?? 1) - 1)">Weiter
+      </button>
+    </div>
+  </section>
+</div>
+
+<ng-template #noAccess>
+  <p>Keine Berechtigung. Diese Seite ist nur für Administratoren.</p>
+</ng-template>

@@ -1,11 +1,11 @@
 ### Login and get token
 # @name login
-POST http://localhost:8080/api/public/auth/login
+POST http://localhost:8080/public/auth/login
 Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "oR-3S6ybkjkkbkRS"
+  "password": "yxtLqlZMQsQBs8qH"
 }
 
 > {% client.global.set("token", response.body.token); %}
@@ -14,3 +14,24 @@ Content-Type: application/json
 POST http://localhost:8080/api/testdata/setup
 Authorization: Bearer {{token}}
 Content-Type: application/json
+
+### Login and get token
+# @name login
+POST http://localhost:8080/public/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "yxtLqlZMQsQBs8qH"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+### testdata
+POST http://localhost:8080/api/testdata/setup
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### grades own view (new)
+GET http://localhost:8080/grades/view/own?page=0&size=10
+Authorization: Bearer {{token}}

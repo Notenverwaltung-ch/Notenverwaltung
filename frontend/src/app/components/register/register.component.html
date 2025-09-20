@@ -1,0 +1,37 @@
+<div class="auth-card">
+  <h1>Registrieren</h1>
+  <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field">
+      <span class="field__label">Benutzername</span>
+      <input class="field__input" formControlName="username" type="text" placeholder="Benutzernamen wählen"/>
+    </label>
+    <label class="field">
+      <span class="field__label">Vorname (optional)</span>
+      <input class="field__input" formControlName="firstName" type="text" placeholder="Vorname eingeben"/>
+    </label>
+    <label class="field">
+      <span class="field__label">Nachname (optional)</span>
+      <input class="field__input" formControlName="lastName" type="text" placeholder="Nachname eingeben"/>
+    </label>
+    <label class="field">
+      <span class="field__label">E-Mail (optional)</span>
+      <input class="field__input" formControlName="email" type="email" placeholder="E-Mail eingeben"/>
+    </label>
+    <label class="field">
+      <span class="field__label">Geburtsdatum (optional)</span>
+      <input class="field__input" formControlName="dateOfBirth" type="date"/>
+    </label>
+    <label class="field">
+      <span class="field__label">Passwort</span>
+      <input class="field__input" formControlName="password" type="password" placeholder="Passwort eingeben"/>
+    </label>
+    <button class="btn btn-primary" type="submit"
+            [disabled]="loading || form.invalid">{{ loading ? 'Registrierung läuft...' : 'Registrieren' }}
+    </button>
+    <div class="error" *ngIf="error">{{ error }}</div>
+  </form>
+  <p>
+    Bereits ein Konto?
+    <a routerLink="/login">Anmelden</a>
+  </p>
+</div>

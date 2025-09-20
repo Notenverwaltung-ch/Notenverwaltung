@@ -100,24 +100,20 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Locate built jars and prepare artifact name
+      - name: Collect app.jar artifact
         id: jars
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
           mkdir -p upload
-          for f in build/libs/*.jar; do
-            base="notenverwaltung-jars-${VERSION}"
-            if [[ "$f" =~ (-plain|-sources|-javadoc)\.jar$ ]]; then
-              classifier=$(echo "$f" | sed -E 's/.*(-plain|-sources|-javadoc)\.jar/\1/')
-              cp "$f" "upload/${base}${classifier}.jar"
-            else
-              cp "$f" "upload/${base}.jar"
-            fi
-          done
+          if [ ! -f build/libs/app.jar ]; then
+            echo "Expected build/libs/app.jar not found" >&2
+            ls -al build/libs || true
+            exit 1
+          fi
+          cp build/libs/app.jar "upload/notenverwaltung-app-${VERSION}.jar"
           echo "dir=upload" >> "$GITHUB_OUTPUT"
 
       - name: Upload jars artifact
@@ -127,7 +123,7 @@ jobs:
           path: ${{ steps.jars.outputs.dir }}
 
   latex:
-    name: Build documentation PDF
+    name: Build documentation PDFs
     needs: compute-version
     runs-on: ubuntu-latest
     steps:
@@ -136,37 +132,64 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build PDF with latex-action
-        uses: xu-cheng/latex-action@v3
-        with:
-          root_file: documentation.tex
-          working_directory: documentation
-          latexmk_use_lualatex: false
-          latexmk_use_xelatex: false
-          extra_system_packages: ghostscript
-          args: -pdf -interaction=nonstopmode -halt-on-error -file-line-error
-          pre_compile: |
-            tlmgr update --self || true
-            tlmgr install microtype ltablex ragged2e xurl listingsutf8 babel-german array pdflscape tikz || true
-      - name: Prepare version-suffixed PDF
-        if: always()
+      - name: Install TeX Live packages
         shell: bash
         run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-pictures texlive-lang-german latexmk ghostscript
+
+      - name: Build all .tex files
+        id: buildtex
+        shell: bash
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
           set -euo pipefail
-          SRC="documentation/documentation.pdf"
-          if [ ! -f "$SRC" ]; then
-            echo "PDF not found: $SRC" >&2
-            ls -al documentation || true
+          shopt -s nullglob
+          outdir="documentation/build"
+          mkdir -p "$outdir"
+          built=()
+          # Iterate .tex files that are standalone (contain \documentclass) and exclude asset directories
+          while IFS= read -r -d '' file; do
+            # Filter by content: only build if it contains \documentclass
+            if ! grep -q '\\documentclass' "$file"; then
+              echo "Skip (no \\documentclass): $file"
+              continue
+            fi
+            rel="${file#documentation/}"               # e.g., documentation.tex or deployment/deployment.tex
+            base="$(basename "$file" .tex)"           # e.g., documentation or deployment
+            dir="$(dirname "$rel")"                   # e.g., . or deployment
+            workdir="documentation/${dir}"
+            echo "==> Building $rel in $workdir"
+            (
+              cd "$workdir"
+              latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error "$base.tex"
+            )
+            # Source PDF location after build
+            srcpdf="documentation/${dir}/${base}.pdf"
+            if [ ! -f "$srcpdf" ]; then
+              echo "PDF not found after build: $srcpdf" >&2
+              exit 1
+            fi
+            outpdf="$outdir/${base}-${VERSION}.pdf"
+            cp "$srcpdf" "$outpdf"
+            built+=("$outpdf")
+          done < <(find documentation \( -path "*/images/*" -o -path "*/diagrams/*" -o -path "*/dump/*" -o -path "*/swagger/*" -o -path "*/testcases/*" \) -prune -o -type f -name "*.tex" -print0)
+
+          if [ ${#built[@]} -eq 0 ]; then
+            echo "No .tex files found to build under documentation/" >&2
             exit 1
           fi
-          cp "$SRC" "documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf"
 
-      - name: Upload PDF artifact
-        if: always()
+          printf "Built PDFs:\n"
+          printf ' - %s\n' "${built[@]}"
+          echo "outdir=$outdir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload PDF artifacts
         uses: actions/upload-artifact@v4
         with:
           name: notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}
-          path: documentation/notenverwaltung-documentation-${{ needs.compute-version.outputs.version }}.pdf
+          path: ${{ steps.buildtex.outputs.outdir }}
 
   docker:
     name: Build and push Docker image
@@ -192,34 +215,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download jar artifacts only
+      - name: Download app jar artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: notenverwaltung-jars*
+          name: notenverwaltung-jars-${{ needs.compute-version.outputs.version }}
           path: build/libs
-          merge-multiple: true
 
       - name: Normalize JAR filename and verify presence
         run: |
           mkdir -p build/libs
           shopt -s nullglob
-          JAR_CANDIDATES=(build/libs/*.jar build/libs/**/*.jar)
-          COUNT=${#JAR_CANDIDATES[@]}
-          if [ "$COUNT" -eq 0 ]; then
-            find build -maxdepth 3 -type f -name "*.jar" -print || true
+          if [ ! -f build/libs/notenverwaltung-app-${{ needs.compute-version.outputs.version }}.jar ]; then
+            echo "Downloaded app jar not found" >&2
+            ls -al build/libs || true
             exit 1
           fi
-          SRC_JAR="${JAR_CANDIDATES[0]}"
-          cp "$SRC_JAR" build/libs/app.jar
+          cp "build/libs/notenverwaltung-app-${{ needs.compute-version.outputs.version }}.jar" build/libs/app.jar
           cp build/libs/app.jar ./app.jar
         shell: bash
 
 
-      - name: Set image tag (lowercase owner for GHCR)
+      - name: Compute image tags
         id: img
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "name=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "primary=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "latest=ghcr.io/${OWNER_LC}/notenverwaltung:latest" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -227,13 +248,90 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ steps.img.outputs.name }}
+          tags: |
+            ${{ steps.img.outputs.primary }}
+            ${{ steps.img.outputs.latest }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  docker-frontend:
+    name: Build and push Frontend Docker image
+    needs: [compute-version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Angular app (production)
+        working-directory: frontend
+        run: npx ng build --configuration=production
+
+      - name: Upload frontend dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}
+          path: frontend/dist/frontend-notenverwaltung
+
+      - name: Create web app dist zip
+        run: |
+          cd frontend/dist
+          zip -r "../../notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}.zip" frontend-notenverwaltung
+        shell: bash
+
+      - name: Upload web app dist zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notenverwaltung-frontend-dist-zip-${{ needs.compute-version.outputs.version }}
+          path: notenverwaltung-frontend-dist-${{ needs.compute-version.outputs.version }}.zip
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags
+        id: imgfe
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "primary=ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "latest=ghcr.io/${OWNER_LC}/notenverwaltung-frontend:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.imgfe.outputs.primary }}
+            ${{ steps.imgfe.outputs.latest }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   release:
     name: Create GitHub Release with artifacts
-    needs: [build-and-tag, compute-version, latex]
+    needs: [build-and-tag, compute-version, latex, docker-frontend]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
@@ -251,6 +349,33 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate release body with Docker image links
+        id: relbody
+        shell: bash
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          {
+            printf "%s\n" "# Docker Images"
+            printf "%s\n" ""
+            printf "%s\n" "The CI/CD pipeline built and published two Docker images to GitHub Container Registry for this release:"
+            printf "%s\n" ""
+            printf "%s\n" "- Backend API image:"
+            printf "%s\n" "  - Pull/tag: ghcr.io/${OWNER_LC}/notenverwaltung:${VERSION}"
+            printf "%s\n" "  - Package page: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung"
+            printf "%s\n" ""
+            printf "%s\n" "- Frontend image:"
+            printf "%s\n" "  - Pull/tag: ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${VERSION} (also available as ghcr.io/${OWNER_LC}/notenverwaltung-frontend:latest)"
+            printf "%s\n" "  - Package page: https://github.com/users/${OWNER}/packages/container/package/notenverwaltung-frontend"
+            printf "%s\n" ""
+            printf "%s\n" "Usage examples:"
+            printf "%s\n" "- docker pull ghcr.io/${OWNER_LC}/notenverwaltung:${VERSION}"
+            printf "%s\n" "- docker pull ghcr.io/${OWNER_LC}/notenverwaltung-frontend:${VERSION}"
+          } > release_body.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -258,6 +383,7 @@ jobs:
           name: ${{ needs.compute-version.outputs.version }}
           files: |
             artifacts/**
+          body_path: release_body.md
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
