@@ -1,0 +1,23 @@
+<div class="auth-card">
+  <h1>Register</h1>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Username
+      <input formControlName="username" type="text" placeholder="Choose a username" />
+    </label>
+    <label>
+      Email (optional)
+      <input formControlName="email" type="email" placeholder="Enter email" />
+    </label>
+    <label>
+      Password
+      <input formControlName="password" type="password" placeholder="Enter password" />
+    </label>
+    <button class="btn btn-primary" type="submit" [disabled]="loading || form.invalid">{{ loading ? 'Registering...' : 'Register' }}</button>
+    <div class="error" *ngIf="error">{{ error }}</div>
+  </form>
+  <p>
+    Already have an account?
+    <a routerLink="/login">Login</a>
+  </p>
+</div>

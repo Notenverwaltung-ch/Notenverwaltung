@@ -1,0 +1,97 @@
+<div class="container">
+  <h1>Grades</h1>
+
+  <section class="card">
+    <h2>Add Grade</h2>
+    <form [formGroup]="form" (ngSubmit)="onAdd()" class="grid">
+      <label>
+        <span>Student*</span>
+        <select formControlName="studentId" [disabled]="optionsLoading || adding" required>
+          <option value="" disabled>Select student</option>
+          <option *ngFor="let s of students" [value]="s.id">{{ s.username }}</option>
+        </select>
+      </label>
+      <label>
+        <span>Test</span>
+        <select formControlName="testId" [disabled]="optionsLoading || adding">
+          <option value="">No test</option>
+          <option *ngFor="let t of testsList" [value]="t.id">{{ t.name }}</option>
+        </select>
+      </label>
+      <label>
+        <span>Value*</span>
+        <input type="number" step="0.01" formControlName="value" required />
+      </label>
+      <label>
+        <span>Weight*</span>
+        <input type="number" step="0.01" formControlName="weight" />
+      </label>
+      <label class="col-span-2">
+        <span>Comment*</span>
+        <input formControlName="comment" />
+      </label>
+      <div class="actions col-span-2">
+        <button class="btn" type="submit" [disabled]="form.invalid || adding">{{ adding ? 'Adding...' : 'Add' }}</button>
+      </div>
+    </form>
+    <p class="error" *ngIf="error">{{ error }}</p>
+    <p class="error" *ngIf="optionsError">{{ optionsError }}</p>
+    <p class="success" *ngIf="success">{{ success }}</p>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Grades List</h2>
+      <div class="spacer"></div>
+      <label>Page Size
+        <select [(ngModel)]="size" (change)="pageIndex=0; load()">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </label>
+    </div>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th class="sortable" (click)="toggleSort('value')">
+          Value <span class="sort-indicator" *ngIf="sortField==='value'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('weight')">
+          Weight <span class="sort-indicator" *ngIf="sortField==='weight'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('comment')">
+          Comment <span class="sort-indicator" *ngIf="sortField==='comment'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('studentUsername')">
+          Student <span class="sort-indicator" *ngIf="sortField==='studentUsername'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('testName')">
+          Test <span class="sort-indicator" *ngIf="sortField==='testName'">{{ sortDir==='asc' ? '▲' : '▼' }}</span>
+        </th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let g of page?.content">
+        <td>{{ g.value }}</td>
+        <td>{{ g.weight }}</td>
+        <td>{{ g.comment }}</td>
+        <td>{{ g.studentUsername }}</td>
+        <td>{{ g.testName }}</td>
+      </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <button class="btn" (click)="prev()" [disabled]="page?.number===0 || loading">Prev</button>
+      <span>Page {{ (page?.number ?? 0) + 1 }} / {{ page?.totalPages ?? 1 }}</span>
+      <button class="btn" (click)="next()" [disabled]="(page?.number ?? 0) >= (page?.totalPages ?? 1) - 1 || loading">Next</button>
+    </div>
+
+    <p *ngIf="loading">Loading...</p>
+    <p class="error" *ngIf="listError">{{ listError }}</p>
+  </section>
+</div>

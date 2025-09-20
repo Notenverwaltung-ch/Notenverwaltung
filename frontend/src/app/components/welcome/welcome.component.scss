@@ -1,0 +1,28 @@
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.appbar-spacer { height: 64px; }
+
+.hero {
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: 16px;
+}
+
+.hero h1 { margin: 0 0 8px; font-size: 40px; font-weight: 700; letter-spacing: .2px; }
+.hero p { margin: 0 0 24px; color: var(--md-sys-color-on-surface-variant); }
+
+.actions { display: flex; gap: 12px; justify-content: center; }
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.feature { padding: 20px; border-radius: 14px; }
+.feature h3 { margin: 0 0 6px; }

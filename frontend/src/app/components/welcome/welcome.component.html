@@ -1,0 +1,29 @@
+<div class="welcome">
+  <div class="appbar-spacer"></div>
+  <section class="hero card-elevated">
+    <h1>Notenverwaltung</h1>
+    <p *ngIf="!auth.isAuthenticated()">Verwalte deine Noten effizient, sicher und überall. Melde dich an oder registriere dich, um zu starten.</p>
+    <h2 *ngIf="auth.isAuthenticated()">Willkommen, {{ username || 'Benutzer' }}!</h2>
+    <div class="actions" *ngIf="!auth.isAuthenticated()">
+      <a class="btn btn-primary" routerLink="/login">Anmelden</a>
+      <a class="btn btn-tonal" routerLink="/register">Registrieren</a>
+    </div>
+    <div class="actions" *ngIf="auth.isAuthenticated()">
+      <a class="btn btn-primary" routerLink="/home">Weiter zur Übersicht</a>
+    </div>
+  </section>
+  <section class="features">
+    <div class="feature card-elevated">
+      <h3>Übersicht</h3>
+      <p>Schneller Überblick über alle Fächer und Noten.</p>
+    </div>
+    <div class="feature card-elevated">
+      <h3>Sicherheit</h3>
+      <p>JWT-basierte Authentifizierung für deine Daten.</p>
+    </div>
+    <div class="feature card-elevated">
+      <h3>Modern</h3>
+      <p>Schlankes, modernes Design inspiriert von Material.</p>
+    </div>
+  </section>
+</div>
