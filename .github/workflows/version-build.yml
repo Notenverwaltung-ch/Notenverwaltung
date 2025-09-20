@@ -215,11 +215,12 @@ jobs:
         shell: bash
 
 
-      - name: Set image tag (lowercase owner for GHCR)
+      - name: Compute image tags
         id: img
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "name=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "primary=ghcr.io/${OWNER_LC}/notenverwaltung:${{ needs.compute-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "latest=ghcr.io/${OWNER_LC}/notenverwaltung:latest" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -227,7 +228,9 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ steps.img.outputs.name }}
+          tags: |
+            ${{ steps.img.outputs.primary }}
+            ${{ steps.img.outputs.latest }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
