@@ -382,7 +382,9 @@ jobs:
           tag_name: ${{ needs.compute-version.outputs.version }}
           name: ${{ needs.compute-version.outputs.version }}
           files: |
-            artifacts/**
+            artifacts/**/*.zip
+            artifacts/**/*.jar
+            artifacts/**/*.pdf
           body_path: release_body.md
           generate_release_notes: true
         env:
