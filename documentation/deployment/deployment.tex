@@ -28,6 +28,22 @@
 
 \usepackage{listings}
 
+% Define custom languages for listings (YAML and NGINX)
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,y,n,yes,no,on,off},
+  comment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+\lstdefinelanguage{nginx}{
+  keywords={server,location,listen,server\_name,root,index,proxy\_pass,include,ssl\_certificate,ssl\_certificate\_key,return,if,set,add\_header,client\_max\_body\_size,upstream,resolver,proxy\_set\_header,proxy\_redirect,expires,try\_files,access\_log,error\_log},
+  comment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]',
+  sensitive=true
+}
+
 \usepackage{geometry}
 \geometry{a4paper, top=20mm, left=20mm, right=20mm, bottom=25mm}
 
@@ -368,7 +384,7 @@ sudo apt-get install docker-compose
         \end{itemize}
     \end{itemize}
 
-    \lstinputlisting[language=yml, label={lst:ComposeReverseProxy}, caption={docker-compose.yml für den Reverse Proxy}]{compose/reverse-proxy.yml}
+    \lstinputlisting[language=yaml, label={lst:ComposeReverseProxy}, caption={docker-compose.yml für den Reverse Proxy}]{compose/reverse-proxy.yml}
 
     Die folgenden NGINX Server-Konfigurationen werden im Verzeichnis \texttt{conf.d} des Reverse Proxys abgelegt und definieren das Routing für die Domains.
     Jede Datei enthält jeweils eine Weiterleitung von HTTP auf HTTPS sowie einen verschlüsselten Server-Block, der Anfragen an den passenden
@@ -423,7 +439,7 @@ sudo apt-get install docker-compose
         \end{itemize}
     \end{itemize}
 
-    \lstinputlisting[language=yml, label={lst:ComposeDb}, caption={docker-compose.yml für die Datenbank + PgAdmin}]{compose/db-pgadmin.yml}
+    \lstinputlisting[language=yaml, label={lst:ComposeDb}, caption={docker-compose.yml für die Datenbank + PgAdmin}]{compose/db-pgadmin.yml}
 
     Für pgAdmin muss der Datenordner initial angelegt und die Berechtigungen korrekt gesetzt werden:
     \begin{lstlisting}{language=bash}
@@ -451,7 +467,7 @@ sudo apt-get install docker-compose
         \item Ressourcen/Deploy: Ein Replikat (zustandslos), Rolling Update mit Wartezeit, sowie konservative Speicherlimits/Reservierungen (512M/128M).
     \end{itemize}
 
-    \lstinputlisting[language=yml, label={lst:ComposeApi}, caption={docker-compose.yml für den Spring Service}]{compose/api.yml}
+    \lstinputlisting[language=yaml, label={lst:ComposeApi}, caption={docker-compose.yml für den Spring Service}]{compose/api.yml}
 
     \subsubsection{Angular Frontend}
 
@@ -466,7 +482,7 @@ sudo apt-get install docker-compose
         Diese URL ist im Build bzw. der NGINX-Config hinterlegt.
     \end{itemize}
 
-    \lstinputlisting[language=yml, label={lst:ComposeFrontend}, caption={docker-compose.yml für das Angular Frontend}]{compose/frontend.yml}
+    \lstinputlisting[language=yaml, label={lst:ComposeFrontend}, caption={docker-compose.yml für das Angular Frontend}]{compose/frontend.yml}
 
 
     \section*{Quellen}
