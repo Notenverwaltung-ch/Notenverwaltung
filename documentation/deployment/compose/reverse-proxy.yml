@@ -1,0 +1,16 @@
+services:
+  nginx:
+    image: nginx
+    volumes:
+      - /mnt/volume-nbg1-1/data/proxy/conf.d/:/etc/nginx/conf.d/
+      - /mnt/volume-nbg1-1/data/proxy/www/:/var/www/
+      - /mnt/volume-nbg1-1/data/proxy/ssl/:/etc/ssl:ro
+    networks:
+      - notenverwaltung_productive
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  notenverwaltung_productive:
+    external: true

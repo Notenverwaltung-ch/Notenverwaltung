@@ -1,0 +1,21 @@
+services:
+  notenverwaltung:
+    image: ghcr.io/notenverwaltung-ch/notenverwaltung-frontend:<version>
+    hostname: "frontend"
+    networks:
+      - notenverwaltung_productive
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+networks:
+  notenverwaltung_productive:
+    external:
+      name: notenverwaltung_productive
