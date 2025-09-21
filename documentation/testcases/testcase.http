@@ -8,7 +8,9 @@ Content-Type: application/json
 {
   "username": "newuser",
   "password": "newpassword",
-  "roles": ["USER"]
+  "roles": [
+    "USER"
+  ]
 }
 
 ### T2 - Create user (missing required fields) -> expect 400
@@ -29,6 +31,7 @@ Content-Type: application/json
   "startDate": "2026-02-01",
   "endDate": "2026-06-30"
 }
+
 ### 3 - list semesters
 GET http://localhost:8080/api/semesters?page=0&size=10
 Authorization: Bearer {{token}}
@@ -61,7 +64,9 @@ Content-Type: application/json
   "subjectId": "{{subjectId}}"
 }
 
-> {% client.global.set("semesterSubjectId", response.body && response.body.id ? response.body.id : client.global.get("semesterSubjectId")); %}
+> {%
+    client.global.set("semesterSubjectId", response.body && response.body.id ? response.body.id : client.global.get("semesterSubjectId"));
+%}
 
 ### T6 - Duplicate SemesterSubject (expect conflict/validation error)
 POST http://localhost:8080/api/semester-subjects
@@ -83,7 +88,9 @@ Content-Type: application/json
   "semesterSubjectId": "{{semesterSubjectId}}"
 }
 
-> {% client.global.set("classId", response.body.id); %}
+> {%
+    client.global.set("classId", response.body.id);
+%}
 PUT http://localhost:8080/api/classes/{{classId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -104,7 +111,9 @@ Content-Type: application/json
   "classId": "{{classId}}"
 }
 
-> {% client.global.set("testId2", response.body.id); %}
+> {%
+    client.global.set("testId2", response.body.id);
+%}
 
 ### T8 List
 GET http://localhost:8080/api/tests?page=0&size=10
@@ -133,14 +142,14 @@ Authorization: Bearer {{token}}
 GET http://localhost:8080/api/admin/users?page=0&size=50
 Authorization: Bearer {{token}}
 
-> {% 
-const page = response.body; 
-if (page && Array.isArray(page.content)) {
-  const match = page.content.find(it => it.username === 'admin');
-  if (match) {
-    client.global.set('studentId', match.id);
-  }
-}
+> {%
+    const page = response.body;
+    if (page && Array.isArray(page.content)) {
+        const match = page.content.find(it => it.username === 'admin');
+        if (match) {
+            client.global.set('studentId', match.id);
+        }
+    }
 %}
 
 ### T9 - Create a grade for that student and the previously created test
@@ -155,7 +164,11 @@ Content-Type: application/json
   "weight": 1.0
 }
 
-> {% if (response.body && response.body.id) { client.global.set('gradeId', response.body.id); } %}
+> {%
+    if (response.body && response.body.id) {
+        client.global.set('gradeId', response.body.id);
+    }
+%}
 
 ### T10 - Duplicate Grade for same Student+Test (expect 409/400)
 POST http://localhost:8080/api/grades
@@ -186,7 +199,11 @@ Content-Type: application/json
   "password": "123456"
 }
 
-> {% if (response.body && response.body.token) { client.global.set('userToken', response.body.token); } %}
+> {%
+    if (response.body && response.body.token) {
+        client.global.set('userToken', response.body.token);
+    }
+%}
 
 ### T14 - Paging/Filter Grades
 GET http://localhost:8080/api/grades?page=0&size=10&valueMin=4.0

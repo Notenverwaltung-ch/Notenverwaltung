@@ -1,0 +1,41 @@
+services:
+  db_prod:
+    image: postgres:13
+    hostname: "postgres"
+    environment:
+      POSTGRES_PASSWORD: "<password>"
+    networks:
+      - notenverwaltung_productive
+    volumes:
+      - /mnt/volume-nbg1-1/data/db/postgres:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  pgadmin:
+    image: dpage/pgadmin4
+    hostname: "pgadmin-prod"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: <mail>>
+      PGADMIN_DEFAULT_PASSWORD: "<password>"
+    volumes:
+      - /mnt/volume-nbg1-1/data/db/pgadmin:/var/lib/pgadmin
+    networks:
+      - notenverwaltung_productive
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+
+networks:
+  notenverwaltung_productive:
+    external:
+      name: notenverwaltung_productive
