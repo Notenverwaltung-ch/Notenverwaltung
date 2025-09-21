@@ -475,7 +475,7 @@ sudo apt-get install docker-compose
     Hinweise zur Konfiguration und zum Betrieb:
     \begin{itemize}
         \item Image: Enthält die gebauten statischen Dateien und eine NGINX-Konfiguration, die die App unter Port 80 bedient.
-        \item Netzwerk: Läuft ausschliesslich im internen Netzwerk \code{notenverwaltung\_productive}.
+        \item Netzwerk: Läuft ausschliesslich im internen Netzwerk \code{notenverwaltung_productive}.
         Externe Erreichbarkeit erfolgt über den Reverse Proxy und den Hostnamen \code{notenverwaltung.ch}.
         \item Ressourcen/Deploy: Ein Replikat genügt; Rolling Update-Einstellungen analog zu den anderen Services; moderate Speicherlimits/Reservierungen (512M/128M).
         \item API-Endpoint: Die App ruft die Backend-API unter \code{https://api.notenverwaltung.ch} auf.
