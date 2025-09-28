@@ -67,7 +67,7 @@
     showstringspaces=false,
     tabsize=2,
     postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
-    literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {Ä}{{\"A}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {ss}{{\ss}}1 {é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {É}{{\'E}}1
+    literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {Ä}{{\"A}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {ß}{{\ss}}1 {é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {É}{{\'E}}1
 }
 
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
@@ -379,8 +379,8 @@ sudo apt-get install docker-compose
         \end{itemize}
         \item Ports:
         \begin{itemize}
-            \item \texttt{80:80} veröffentlicht HTTP nach außen.
-            \item \texttt{443:443} veröffentlicht HTTPS nach außen.
+            \item \texttt{80:80} veröffentlicht HTTP nach ausen.
+            \item \texttt{443:443} veröffentlicht HTTPS nach aussen.
         \end{itemize}
     \end{itemize}
 
@@ -396,7 +396,7 @@ sudo apt-get install docker-compose
         \item \textbf{TLS-Konfiguration}: Die Zertifikate werden aus dem Volume unter \texttt{/etc/ssl} eingebunden (z. B. Cloudflare Origin-Zertifikate). HSTS ist aktiviert.
         \item \textbf{Proxy-Header}: \texttt{X-Forwarded-*}-Header und \texttt{Host} werden gesetzt, damit Backend und App die ursprünglichen Request-Informationen erhalten.
         \item \textbf{resolver 127.0.0.11}: Nutzt den internen Docker DNS-Resolver, sodass die Service-Namen (z. B. \texttt{api}, \texttt{frontend}, \texttt{pgadmin-prod}) aufgelöst werden.
-        \item \textbf{client\_max\_body\_size}: Erlaubt größere Uploads (z. B. Datei-Uploads der App).
+        \item \textbf{client\_max\_body\_size}: Erlaubt grössere Uploads (z. B. Datei-Uploads der App).
     \end{itemize}
 
     \paragraph{notenverwaltung.ch (Frontend)} \texttt{frontend:80}
